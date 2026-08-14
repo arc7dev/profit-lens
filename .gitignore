@@ -1,0 +1,22 @@
+# Dependencias — tooling puro, nunca las toca WordPress en runtime (el
+# plugin usa un autoloader propio, no vendor/autoload.php; ver
+# includes/class-plugin.php).
+node_modules/
+vendor/
+
+# build/ y assets/fonts/*.woff2 (+ assets/css/fonts.css) SÍ se versionan,
+# a propósito: este repo es la carpeta que se clona directo a
+# wp-content/plugins/. El usuario final no corre `npm run build` ni
+# `npm run fonts` — si esos artefactos no están committeados, clonar el
+# repo da un plugin activable pero roto (dashboard sin compilar, fuentes
+# sin copiar). Quien toque src/ tiene que correr `npm run build` antes de
+# commitear — ver README.md.
+
+# Empaquetado
+*.zip
+
+# Logs
+*.log
+
+# Editor / OS
+.DS_Store

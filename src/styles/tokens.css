@@ -1,0 +1,41 @@
+/**
+ * Design tokens de Profit Lens, en variables CSS. Escopeadas a
+ * .profitlens-root en vez de :root — el plugin vive dentro de wp-admin y no
+ * debe pisar variables globales de otros plugins/temas.
+ */
+
+.profitlens-root {
+	--pl-color-bg: #f7f9fb;
+	--pl-color-surface: #fff;
+	--pl-color-border: #e3e9ee;
+	--pl-color-border-soft: #f1f4f7;
+	--pl-color-text: #12212e;
+	--pl-color-muted: #64757f;
+	--pl-color-accent: #98dbaf;
+	--pl-color-accent-strong: #7ecf9a;
+	--pl-color-accent-wash: rgba(152, 219, 175, 0.08);
+	--pl-color-profit: #1f8a5b;
+	--pl-color-loss: #c0392b;
+	--pl-color-track: #f1f4f7;
+	--pl-radius: 4px;
+
+	--pl-font-sans: "Inter", -apple-system, blinkmacsystemfont, "Segoe UI", sans-serif;
+	--pl-font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, menlo, consolas, monospace;
+
+	background: var(--pl-color-bg);
+	color: var(--pl-color-text);
+	font-family: var(--pl-font-sans);
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 24px 24px 48px;
+	-webkit-font-smoothing: antialiased;
+}
+
+.profitlens-root,
+.profitlens-root * {
+	box-sizing: border-box;
+}
+
+.profitlens-root .pl-mono {
+	font-family: var(--pl-font-mono);
+}

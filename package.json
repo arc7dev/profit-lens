@@ -1,0 +1,38 @@
+{
+  "name": "profit-lens",
+  "version": "0.1.0",
+  "description": "Profit Lens — Profit Analytics for WooCommerce. Dashboard build sources.",
+  "private": true,
+  "license": "GPL-2.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
+  "volta": {
+    "node": "22.9.0"
+  },
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "fonts": "node bin/copy-fonts.js",
+    "lint:js": "wp-scripts lint-js src",
+    "lint:css": "wp-scripts lint-style \"src/**/*.css\"",
+    "format": "wp-scripts format",
+    "packages-update": "wp-scripts packages-update"
+  },
+  "dependencies": {
+    "@wordpress/api-fetch": "^7.0.0",
+    "@wordpress/components": "^28.0.0",
+    "@wordpress/data": "^10.0.0",
+    "@wordpress/date": "^5.0.0",
+    "@wordpress/dom-ready": "^4.0.0",
+    "@wordpress/element": "^6.0.0",
+    "@wordpress/i18n": "^5.0.0",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.0",
+    "@wordpress/scripts": "^30.0.0",
+    "typescript": "5.4.5"
+  }
+}
