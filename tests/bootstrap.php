@@ -1,9 +1,9 @@
 <?php
 /**
- * Bootstrap de PHPUnit. Sigue el patrón estándar del test suite de
- * WordPress (WP_TESTS_DIR) más el autoload de Composer para las clases del
- * propio plugin (classmap — mismo motivo que en profit-lens.php: los
- * archivos de includes/ no siguen naming PSR-4).
+ * PHPUnit bootstrap. Follows the standard WordPress test suite pattern
+ * (WP_TESTS_DIR) plus Composer's autoload for the plugin's own classes
+ * (classmap — same reason as in profit-lens.php: files under includes/
+ * don't follow PSR-4 naming).
  *
  * @package ProfitLens
  */
@@ -17,16 +17,16 @@ if ( ! $_tests_dir ) {
 }
 
 if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
-	echo "No se encontró el test suite de WordPress en \"{$_tests_dir}\".\n";
-	echo "Instalarlo con bin/install-wp-tests.sh (ver herramienta wp-cli/wp-cli o wp-phpunit/wp-phpunit).\n";
+	echo "Could not find the WordPress test suite at \"{$_tests_dir}\".\n";
+	echo "Install it with bin/install-wp-tests.sh (see wp-cli/wp-cli or wp-phpunit/wp-phpunit).\n";
 	exit( 1 );
 }
 
 require_once $_tests_dir . '/includes/functions.php';
 
 /**
- * Carga el plugin bajo prueba (y WooCommerce, del que depende) antes de que
- * el test suite arranque WordPress.
+ * Loads the plugin under test (and WooCommerce, which it depends on)
+ * before the test suite boots WordPress.
  */
 function profitlens_tests_manually_load_plugin() {
 	$woocommerce = WP_CONTENT_DIR . '/plugins/woocommerce/woocommerce.php';

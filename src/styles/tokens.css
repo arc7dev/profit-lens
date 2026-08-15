@@ -1,7 +1,7 @@
 /**
- * Design tokens de Profit Lens, en variables CSS. Escopeadas a
- * .profitlens-root en vez de :root — el plugin vive dentro de wp-admin y no
- * debe pisar variables globales de otros plugins/temas.
+ * Profit Lens design tokens, as CSS variables. Scoped to .profitlens-root
+ * instead of :root — the plugin lives inside wp-admin and shouldn't
+ * clobber global variables from other plugins/themes.
  */
 
 .profitlens-root {

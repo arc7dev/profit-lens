@@ -1,6 +1,6 @@
 /**
- * Barra de insight — el aviso mint con el hallazgo más relevante del rango
- * (por ahora: el producto que más pérdida generó).
+ * Insight bar — the mint-colored callout with the most relevant finding
+ * for the range (for now: the product that lost the most money).
  *
  * @param {Object}                                     props
  * @param {{message: string, product_id: number}|null} props.insight

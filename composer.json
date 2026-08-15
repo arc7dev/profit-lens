@@ -1,6 +1,6 @@
 {
     "name": "arc7/profit-lens",
-    "description": "Profit Lens — Profit Analytics for WooCommerce. Dev tooling (PHPUnit) — el plugin en producción no depende de Composer en runtime, ver profit-lens.php.",
+    "description": "Profit Lens — Profit Analytics for WooCommerce. Dev tooling (PHPUnit) — the plugin doesn't depend on Composer at runtime in production, see profit-lens.php.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [

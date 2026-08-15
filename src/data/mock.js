@@ -1,9 +1,9 @@
 /**
- * Datos de ejemplo con la misma forma que devuelve GET /profit-lens/v1/summary
- * (ver ProfitLens_REST_Controller::build_ready_response() en PHP — mismos
- * números, mismo shape). Se usan mientras el motor de cálculo no existe;
- * cuando useSummary() reemplace este archivo por el fetch real, los
- * componentes no cambian.
+ * Example data with the same shape returned by GET /profit-lens/v1/summary
+ * (see ProfitLens_REST_Controller::build_ready_response() in PHP — same
+ * numbers, same shape). Used while the calculation engine doesn't exist
+ * yet; once useSummary() replaces this file with the real fetch, the
+ * components don't change.
  */
 
 const PRODUCTS = [
@@ -205,11 +205,11 @@ const RANGES = {
 };
 
 /**
- * Arma una respuesta "ready" con la misma forma que el endpoint REST, para
- * un rango dado.
+ * Builds a "ready" response with the same shape as the REST endpoint, for
+ * a given range.
  *
  * @param {'7d'|'30d'|'month'|'custom'} rangeKey
- * @return {Object} Respuesta con la misma forma que GET /profit-lens/v1/summary.
+ * @return {Object} Response with the same shape as GET /profit-lens/v1/summary.
  */
 export function getMockSummary( rangeKey = '30d' ) {
 	const range = RANGES[ rangeKey ] || RANGES[ '30d' ];
@@ -264,10 +264,10 @@ export function getMockSummary( rangeKey = '30d' ) {
 }
 
 /**
- * Respuesta "empty" — costos de producto sin configurar todavía.
+ * "empty" response — product costs not configured yet.
  *
  * @param {'7d'|'30d'|'month'|'custom'} rangeKey
- * @return {Object} Respuesta con status "empty" y la misma forma que el endpoint REST.
+ * @return {Object} Response with status "empty" and the same shape as the REST endpoint.
  */
 export function getMockEmptySummary( rangeKey = '30d' ) {
 	const range = RANGES[ rangeKey ] || RANGES[ '30d' ];

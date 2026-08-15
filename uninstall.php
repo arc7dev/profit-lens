@@ -1,12 +1,12 @@
 <?php
 /**
- * Se corre solo cuando el usuario borra el plugin desde wp-admin (no en
- * desactivación). Limpia lo que Profit Lens haya guardado en la base de
- * datos.
+ * Runs only when the user deletes the plugin from wp-admin (not on
+ * deactivation). Cleans up whatever Profit Lens has stored in the
+ * database.
  *
- * Por ahora el plugin no persiste opciones ni tablas propias — esta fase es
- * solo andamiaje. Se deja preparado el guard estándar y el bloque de
- * limpieza para cuando existan (settings, transients de caché de cálculo).
+ * The plugin doesn't persist any options or tables of its own yet — this
+ * phase is scaffolding only. The standard guard and cleanup block are left
+ * in place for when they exist (settings, calculation-cache transients).
  *
  * @package ProfitLens
  */
@@ -17,10 +17,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
-// Opciones con prefijo profitlens_ (todavía ninguna en esta fase).
+// Options prefixed with profitlens_ (none yet at this stage).
 delete_option( 'profitlens_settings' );
 
-// Transients de caché del engine, si llegan a existir.
+// Engine cache transients, if any ever exist.
 $wpdb->query(
 	"DELETE FROM {$wpdb->options} WHERE option_name LIKE '\\_transient\\_profitlens\\_%' OR option_name LIKE '\\_transient\\_timeout\\_profitlens\\_%'"
 );

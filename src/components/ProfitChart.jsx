@@ -37,11 +37,11 @@ function ChartTooltip( { active, payload, label } ) {
 }
 
 /**
- * Gráfico de área "Profit over time". Recharts en vez del SVG a mano del
- * export de Figma — mismo look (relleno menta con gradiente, línea fina).
+ * "Profit over time" area chart. Recharts instead of the hand-rolled SVG
+ * from the Figma export — same look (mint gradient fill, thin line).
  *
  * @param {Object}                                               props
- * @param {string}                                               props.rangeLabel Etiqueta del rango (p. ej. "Jul 15 – Aug 13, 2026").
+ * @param {string}                                               props.rangeLabel Range label (e.g. "Jul 15 – Aug 13, 2026").
  * @param {Array<{date:string|null,label:string,profit:number}>} props.series
  */
 export default function ProfitChart( { rangeLabel, series } ) {

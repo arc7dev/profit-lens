@@ -1,7 +1,7 @@
 /**
- * Estado "sin costos configurados". Layout del dashboard de fondo,
- * borroso, con una tarjeta de setup centrada — igual que el export de
- * Figma de referencia.
+ * "Costs not configured" state. Dashboard layout in the background,
+ * blurred, with a centered setup card — matching the reference Figma
+ * export.
  */
 
 function Bar( { w, h, opacity = 1, color = '#12212e' } ) {
@@ -19,8 +19,8 @@ function Bar( { w, h, opacity = 1, color = '#12212e' } ) {
 }
 
 /**
- * Réplica simplificada y estática del layout del dashboard, solo como
- * decorado de fondo — no lee datos reales.
+ * Simplified, static replica of the dashboard layout, used purely as
+ * background decoration — doesn't read real data.
  */
 function DashboardPreview() {
 	return (

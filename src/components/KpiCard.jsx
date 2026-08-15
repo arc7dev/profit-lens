@@ -1,12 +1,12 @@
 /**
- * Una tarjeta de KPI (Net Profit, Net Margin, Revenue, Total Costs).
+ * A single KPI card (Net Profit, Net Margin, Revenue, Total Costs).
  *
  * @param {Object}                    props
- * @param {string}                    props.label            Etiqueta corta en mayúsculas (p. ej. "Net Profit").
- * @param {string}                    props.value            Valor ya formateado (p. ej. "$2,347").
- * @param {string}                    props.sub              Línea secundaria (p. ej. "292 orders · Jul 15 – Aug 13").
- * @param {boolean}                   [props.hero=false]     Si es la tarjeta grande (Net Profit).
- * @param {'neutral'|'profit'|'loss'} [props.tone='neutral'] Color del valor/sub cuando hero=true.
+ * @param {string}                    props.label            Short uppercase label (e.g. "Net Profit").
+ * @param {string}                    props.value            Already-formatted value (e.g. "$2,347").
+ * @param {string}                    props.sub              Secondary line (e.g. "292 orders · Jul 15 – Aug 13").
+ * @param {boolean}                   [props.hero=false]     Whether this is the large card (Net Profit).
+ * @param {'neutral'|'profit'|'loss'} [props.tone='neutral'] Color of the value/sub when hero=true.
  */
 export default function KpiCard( {
 	label,

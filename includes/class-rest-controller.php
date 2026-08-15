@@ -1,16 +1,15 @@
 <?php
 /**
- * Endpoint REST de Profit Lens.
+ * Profit Lens REST endpoint.
  *
- * Por ahora devuelve datos de ejemplo armados en PHP — la forma de la
- * respuesta es la definitiva. Cuando ProfitLens_Profit_Engine tenga lógica
- * real, get_summary() cambia de "arma un array mock" a "le pregunta al
- * engine", pero el contrato que consume React no se toca.
+ * For now it returns example data built in PHP — the shape of the response
+ * is the final one. Once ProfitLens_Profit_Engine has real logic,
+ * get_summary() switches from "builds a mock array" to "asks the engine",
+ * but the contract React consumes doesn't change.
  *
- * Override de QA sin parámetros de URL (los debug params por querystring
- * tienden a sobrevivir hasta producción): usar los filtros
- * `profitlens_demo_status` / `profitlens_demo_error`, por ejemplo desde un
- * mu-plugin local:
+ * QA override without URL parameters (debug querystring params tend to
+ * survive into production): use the `profitlens_demo_status` /
+ * `profitlens_demo_error` filters, e.g. from a local mu-plugin:
  *
  *     add_filter( 'profitlens_demo_status', fn() => 'empty' );
  *
@@ -103,7 +102,7 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
-	 * @param array $range Config de rango (ver get_range_config()).
+	 * @param array $range Range config (see get_range_config()).
 	 * @return array
 	 */
 	private function build_empty_response( array $range ) {
@@ -136,7 +135,7 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
-	 * @param array $range Config de rango (ver get_range_config()).
+	 * @param array $range Range config (see get_range_config()).
 	 * @return array
 	 */
 	private function build_ready_response( array $range ) {
@@ -168,11 +167,11 @@ class ProfitLens_REST_Controller {
 				'message'    => __( 'Waxed Canvas Backpack lost $300 this period — 6 units sold below cost.', 'profit-lens' ),
 				'product_id' => 8,
 			),
-			// Cobertura por catálogo Y por ingreso: el % de productos con
-			// costo puede verse alto mientras el % de ingreso cubierto es
-			// bajo, si justo faltan los costos de los productos más
-			// vendidos. revenue_covered_pct es la cifra que dice cuánto
-			// confiar en la ganancia mostrada.
+			// Coverage by catalog AND by revenue: the % of products with a
+			// known cost can look high while the % of revenue covered is
+			// low, if the missing costs happen to be on the best sellers.
+			// revenue_covered_pct is the figure that tells you how much to
+			// trust the profit number shown.
 			'cost_coverage'  => array(
 				'products_with_cost'  => 2612,
 				'products_total'      => 2800,
@@ -203,10 +202,10 @@ class ProfitLens_REST_Controller {
 					'is_estimated' => false,
 				),
 				array(
-					// WooCommerce no siempre guarda la comisión real de la
-					// pasarela en el pedido; cuando el engine tiene que
-					// estimarla con una tasa asumida, is_estimated marca
-					// esa cifra para que la UI la pinte como "est.".
+					// WooCommerce doesn't always store the actual gateway
+					// fee on the order; when the engine has to estimate it
+					// with an assumed rate, is_estimated flags that figure
+					// so the UI renders it as "est.".
 					'key'          => 'gateway_fees',
 					'label'        => __( 'Gateway Fees', 'profit-lens' ),
 					'amount'       => 321.00,
@@ -228,8 +227,8 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
-	 * Tabla de productos de ejemplo. Idéntica en todos los rangos por
-	 * ahora — el engine real la recalculará por rango.
+	 * Example product table. Identical across all ranges for now — the
+	 * real engine will recalculate it per range.
 	 *
 	 * @return array[]
 	 */
@@ -247,8 +246,9 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
-	 * Config de ejemplo por rango — valores dados, no recalculados (calcan
-	 * los del export de Figma Make usado como referencia visual).
+	 * Example config per range — values given as-is, not recalculated
+	 * (they mirror the ones from the Figma Make export used as a visual
+	 * reference).
 	 *
 	 * @param string $range_key '7d' | '30d' | 'month' | 'custom'.
 	 * @return array
@@ -324,9 +324,9 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
-	 * Convierte una etiqueta corta tipo "Aug 7" en fecha ISO 8601, asumiendo
-	 * el año de la config de rango de ejemplo (2026). Solo para los datos
-	 * mock — el engine real trabaja con fechas de pedidos reales.
+	 * Converts a short label like "Aug 7" into an ISO 8601 date, assuming
+	 * the example range config's year (2026). Only for the mock data —
+	 * the real engine works with actual order dates.
 	 *
 	 * @param string $label
 	 * @return string

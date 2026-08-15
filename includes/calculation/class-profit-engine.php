@@ -1,12 +1,12 @@
 <?php
 /**
- * Motor de cálculo de ganancia.
+ * Profit calculation engine.
  *
- * VACÍO por diseño en esta fase: solo firmas de método documentadas. El
- * endpoint REST (ProfitLens_REST_Controller) hoy arma la respuesta con
- * datos de ejemplo directamente; cuando este engine tenga lógica, el
- * controller pasa a llamar get_summary() y el contrato de la respuesta no
- * cambia — así conectar el motor no exige tocar el frontend.
+ * Empty by design at this stage: only documented method signatures. The
+ * REST endpoint (ProfitLens_REST_Controller) currently builds the response
+ * with example data directly; once this engine has logic, the controller
+ * switches to calling get_summary() and the response contract doesn't
+ * change — so wiring up the engine won't require touching the frontend.
  *
  * @package ProfitLens\Calculation
  */
@@ -16,8 +16,8 @@ defined( 'ABSPATH' ) || exit;
 class ProfitLens_Profit_Engine {
 
 	/**
-	 * Fuentes de costo activas (FREE: solo COGS de WooCommerce; PRO añade
-	 * más vía este mismo contrato, sin tocar el engine).
+	 * Active cost sources (FREE: only WooCommerce COGS; PRO adds more
+	 * through this same contract, without touching the engine).
 	 *
 	 * @var ProfitLens_Cost_Source[]
 	 */
@@ -31,30 +31,30 @@ class ProfitLens_Profit_Engine {
 	}
 
 	/**
-	 * Ganancia de un pedido individual: revenue - costo de producto -
-	 * comisión de pasarela - envío + reembolsos.
+	 * Profit for a single order: revenue - product cost - gateway fee -
+	 * shipping + refunds.
 	 *
-	 * OJO al implementar: WooCommerce puede generar un WC_Order_Refund
-	 * automático de reconciliación (reason "Order fully refunded.") apenas
-	 * un pedido pasa a status "refunded", sin que haya un reembolso real
-	 * cargado a mano — no asumir "1 pedido refunded = 1 WC_Order_Refund
-	 * confiable". Sumar reembolsos siempre vía
-	 * $order->get_total_refunded(), nunca iterando y confiando en que hay
-	 * como máximo un refund "real". Ver CLAUDE.md, sección de
-	 * comportamiento de WooCommerce.
+	 * Heads up when implementing this: WooCommerce can generate an
+	 * automatic reconciliation WC_Order_Refund (reason "Order fully
+	 * refunded.") as soon as an order's status changes to "refunded",
+	 * without any real refund having been entered by hand — don't assume
+	 * "1 refunded order = 1 trustworthy WC_Order_Refund". Always sum
+	 * refunds via $order->get_total_refunded(), never by iterating and
+	 * trusting there's at most one "real" refund. See CLAUDE.md, the
+	 * WooCommerce-behavior section.
 	 *
 	 * @param WC_Order $order
 	 * @return array{revenue:float,product_cost:float,gateway_fee:float,shipping:float,refunded:float,profit:float}
 	 */
 	public function calculate_order_profit( WC_Order $order ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Ganancia agregada de un producto en un rango de fechas: suma de
-	 * unidades, revenue, costo y margen % a través de todos los pedidos que
-	 * incluyen ese producto en el rango.
+	 * Aggregate profit for a product over a date range: sum of units,
+	 * revenue, cost, and margin % across every order that includes that
+	 * product within the range.
 	 *
 	 * @param int               $product_id
 	 * @param DateTimeInterface $after
@@ -62,82 +62,82 @@ class ProfitLens_Profit_Engine {
 	 * @return array{product_id:int,name:string,units:int,revenue:float,cost:float,profit:float,margin_pct:float}
 	 */
 	public function calculate_product_profit( $product_id, DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Desglose de costos totales del rango por categoría (costo de
-	 * producto, envío, reembolsos, comisiones de pasarela), en el orden y
-	 * shape que espera `cost_breakdown` en la respuesta REST. Cada entrada
-	 * marca is_estimated según lo que reporte la fuente de costo
-	 * correspondiente (ver ProfitLens_Cost_Source::is_estimated()).
+	 * Total cost breakdown for the range by category (product cost,
+	 * shipping, refunds, gateway fees), in the order and shape expected by
+	 * `cost_breakdown` in the REST response. Each entry flags is_estimated
+	 * based on what the corresponding cost source reports (see
+	 * ProfitLens_Cost_Source::is_estimated()).
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @return array<int,array{key:string,label:string,amount:float,is_estimated:bool}>
 	 */
 	public function get_cost_breakdown( DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Cobertura de costos del rango, en dos dimensiones:
-	 * - por catálogo: % de productos vendidos que tienen costo configurado.
-	 * - por ingreso: % del revenue del periodo generado por productos con
-	 *   costo conocido. Es la cifra que importa de verdad — un catálogo
-	 *   93% cubierto puede esconder que falta el costo de los productos más
-	 *   vendidos, y ese es el escenario que hace que la ganancia mostrada
-	 *   no sea confiable.
+	 * Cost coverage for the range, in two dimensions:
+	 * - by catalog: % of sold products that have a cost set.
+	 * - by revenue: % of the period's revenue generated by products with a
+	 *   known cost. This is the figure that actually matters — a catalog
+	 *   that's 93% covered can hide the fact that the best sellers'
+	 *   costs are missing, and that's the scenario that makes the profit
+	 *   number shown untrustworthy.
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @return array{products_with_cost:int,products_total:int,pct:float,revenue_covered_pct:float,revenue_uncovered:float}
 	 */
 	public function get_cost_coverage( DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Serie diaria de ganancia neta para el gráfico de "Profit over time".
+	 * Daily net profit series for the "Profit over time" chart.
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @return array<int,array{date:string,label:string,profit:float}>
 	 */
 	public function get_chart_series( DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Detecta el insight más relevante del rango (por ahora: el producto
-	 * que más ganancia negativa generó). Devuelve null si no hay ningún
-	 * insight que valga la pena mostrar.
+	 * Detects the most relevant insight for the range (for now: the
+	 * product that generated the most negative profit). Returns null if
+	 * there's no insight worth showing.
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @return array{type:string,message:string,product_id:int}|null
 	 */
 	public function get_insight( DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 
 	/**
-	 * Orquesta todo lo anterior en el shape completo que devuelve
-	 * GET /profit-lens/v1/summary. Este es el método que
-	 * ProfitLens_REST_Controller::get_summary() va a llamar una vez que
-	 * el engine tenga lógica real, en lugar de armar el mock a mano.
+	 * Orchestrates everything above into the full shape returned by
+	 * GET /profit-lens/v1/summary. This is the method
+	 * ProfitLens_REST_Controller::get_summary() will call once the engine
+	 * has real logic, instead of building the mock by hand.
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @return array
 	 */
 	public function get_summary( DateTimeInterface $after, DateTimeInterface $before ) {
-		// TODO: sin implementar todavía.
+		// TODO: not implemented yet.
 		return null;
 	}
 }

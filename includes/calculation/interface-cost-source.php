@@ -1,11 +1,11 @@
 <?php
 /**
- * Contrato para una fuente de costo.
+ * Contract for a cost source.
  *
- * FREE (este plugin) implementa una sola fuente: el campo COGS nativo de
- * WooCommerce (10.3+). PRO añade fuentes que exigen conectar una cuenta
- * externa (gasto de Meta Ads, Google Ads) — pero eso vive en arc7.dev, no
- * en este repo (ver "LA FRONTERA FREE / PRO" en CLAUDE.md).
+ * FREE (this plugin) implements a single source: WooCommerce's native
+ * COGS field (10.3+). PRO adds sources that require connecting an external
+ * account (Meta Ads spend, Google Ads spend) — but that lives on arc7.dev,
+ * not in this repo (see "THE FREE / PRO LINE" in CLAUDE.md).
  *
  * @package ProfitLens\Calculation
  */
@@ -15,43 +15,43 @@ defined( 'ABSPATH' ) || exit;
 interface ProfitLens_Cost_Source {
 
 	/**
-	 * Costo unitario de un producto según esta fuente.
+	 * Unit cost of a product according to this source.
 	 *
-	 * @param WC_Product $product Producto de WooCommerce.
-	 * @return float|null Costo unitario, o null si esta fuente no tiene dato
-	 *                     para el producto (p. ej. COGS sin configurar).
+	 * @param WC_Product $product WooCommerce product.
+	 * @return float|null Unit cost, or null if this source has no data for
+	 *                     the product (e.g. COGS not set).
 	 */
 	public function get_product_cost( WC_Product $product );
 
 	/**
-	 * Identificador estable de la fuente (p. ej. 'woocommerce_cogs'),
-	 * usado como `key` en cost_breakdown de la respuesta REST.
+	 * Stable identifier for the source (e.g. 'woocommerce_cogs'), used as
+	 * the `key` in the REST response's cost_breakdown.
 	 *
 	 * @return string
 	 */
 	public function get_key();
 
 	/**
-	 * Etiqueta legible de la fuente para mostrar en la UI
-	 * (p. ej. "Product Cost").
+	 * Human-readable label for the source, shown in the UI
+	 * (e.g. "Product Cost").
 	 *
 	 * @return string
 	 */
 	public function get_label();
 
 	/**
-	 * Si esta fuente da un costo exacto (dato cargado explícitamente) o
-	 * estimado (calculado con una tasa o supuesto). Alimenta el campo
-	 * `is_estimated` de cada entrada de cost_breakdown.
+	 * Whether this source gives an exact cost (explicitly entered data) or
+	 * an estimated one (computed with a rate or an assumption). Feeds the
+	 * `is_estimated` field of each cost_breakdown entry.
 	 *
 	 * @return bool
 	 */
 	public function is_estimated();
 
 	/**
-	 * Si la fuente tiene datos disponibles para operar (p. ej. si WooCommerce
-	 * 10.3+ con COGS está presente). Cuando ninguna fuente está disponible,
-	 * el endpoint responde status "empty".
+	 * Whether the source has data available to operate (e.g. whether
+	 * WooCommerce 10.3+ with COGS is present). When no source is
+	 * available, the endpoint responds with status "empty".
 	 *
 	 * @return bool
 	 */
