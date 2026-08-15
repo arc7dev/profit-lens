@@ -42,7 +42,7 @@ function SortIcon( { active, dir } ) {
 }
 
 /**
- * Tabla de "Profit by Product": ordenable por columna, con fila de totales.
+ * "Profit by Product" table: sortable by column, with a totals row.
  *
  * @param {Object}                                                                    props
  * @param {Array}                                                                     props.products

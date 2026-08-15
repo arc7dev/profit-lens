@@ -1,7 +1,7 @@
 /**
- * Skeleton con shimmer mientras se espera la respuesta de
- * GET /profit-lens/v1/summary. Misma forma que el dashboard real para que
- * no haya salto de layout al llegar los datos.
+ * Shimmering skeleton shown while waiting on the response from
+ * GET /profit-lens/v1/summary. Same shape as the real dashboard so there's
+ * no layout shift once the data arrives.
  */
 
 function Skeleton( { width = '100%', height = 14, radius = 3, style = {} } ) {

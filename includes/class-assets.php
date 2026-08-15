@@ -1,7 +1,7 @@
 <?php
 /**
- * Encola el bundle de React y las fuentes auto-alojadas, solo en la pantalla
- * de Profit Lens.
+ * Enqueues the React bundle and the self-hosted fonts, only on the
+ * Profit Lens screen.
  *
  * @package ProfitLens
  */
@@ -17,7 +17,7 @@ class ProfitLens_Assets {
 	}
 
 	/**
-	 * @param string $hook_suffix Pantalla de admin actual.
+	 * @param string $hook_suffix Current admin screen.
 	 */
 	public function enqueue( $hook_suffix ) {
 		$admin = ProfitLens_Plugin::instance()->admin;
@@ -29,7 +29,7 @@ class ProfitLens_Assets {
 		$asset_file = PROFITLENS_PLUGIN_DIR . 'build/index.asset.php';
 
 		if ( ! file_exists( $asset_file ) ) {
-			// El bundle todavía no se generó (falta `npm run build`).
+			// The bundle hasn't been generated yet (missing `npm run build`).
 			add_action( 'admin_notices', array( $this, 'render_missing_build_notice' ) );
 			return;
 		}
@@ -67,14 +67,14 @@ class ProfitLens_Assets {
 				'restNamespace'  => ProfitLens_REST_Controller::REST_NAMESPACE,
 				'currencySymbol' => get_woocommerce_currency_symbol(),
 				'currencyCode'   => get_woocommerce_currency(),
-				// El dev switcher de estados (Dashboard.jsx) solo se muestra
-				// cuando esto es true — nunca en un sitio de producción.
+				// The dev state switcher (Dashboard.jsx) only shows up
+				// when this is true — never on a production site.
 				'isDebug'        => defined( 'WP_DEBUG' ) && WP_DEBUG,
 			)
 		);
 
-		// @wordpress/api-fetch toma el nonce y la raíz de la REST API de acá
-		// automáticamente — así no hay que pasarlos a mano en cada fetch.
+		// @wordpress/api-fetch picks up the nonce and REST API root from
+		// here automatically — no need to pass them by hand on every fetch.
 		wp_localize_script(
 			'wp-api-fetch',
 			'wpApiSettings',
@@ -91,7 +91,7 @@ class ProfitLens_Assets {
 			<p>
 				<?php
 				esc_html_e(
-					'Profit Lens: falta compilar el dashboard (npm run build).',
+					'Profit Lens: the dashboard hasn\'t been built yet (npm run build).',
 					'profit-lens'
 				);
 				?>

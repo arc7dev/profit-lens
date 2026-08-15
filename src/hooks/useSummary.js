@@ -1,14 +1,14 @@
 /*
- * Hook de datos — TODAVÍA NO CONECTADO. Por ahora Dashboard.jsx lee de
- * src/data/mock.js directamente; este archivo documenta el reemplazo que
- * entra cuando el motor de cálculo exista.
+ * Data hook — NOT WIRED UP YET. Dashboard.jsx currently reads from
+ * src/data/mock.js directly; this file documents the replacement that
+ * lands once the calculation engine exists.
  *
- * Al conectar el motor, el cambio es: Dashboard.jsx importa `useSummary`
- * en vez de `getMockSummary`, y el resto de los componentes no se toca —
- * consumen el mismo shape (ver el contrato en
+ * When the engine gets wired up, the change is: Dashboard.jsx imports
+ * `useSummary` instead of `getMockSummary`, and the rest of the components
+ * don't change — they consume the same shape (see the contract in
  * includes/class-rest-controller.php).
  *
- * Implementación futura, esquemática (no activa todavía):
+ * Future implementation, sketched out (not active yet):
  *
  *     import apiFetch from '@wordpress/api-fetch';
  *     import { useState, useEffect } from '@wordpress/element';
@@ -33,6 +33,6 @@
  */
 export function useSummary( rangeKey ) {
 	throw new Error(
-		`useSummary( "${ rangeKey }" ) todavía no está conectado al motor de cálculo. Usá src/data/mock.js mientras tanto.`
+		`useSummary( "${ rangeKey }" ) isn't wired up to the calculation engine yet. Use src/data/mock.js in the meantime.`
 	);
 }

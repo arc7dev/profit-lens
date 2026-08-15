@@ -1,10 +1,9 @@
 /**
- * Avisa qué tan confiable es la cifra de ganancia mostrada: qué porcentaje
- * del INGRESO del periodo está respaldado por un costo de producto
- * conocido. Se apoya en revenue_covered_pct, no en pct por catálogo — un
- * catálogo mayormente cubierto puede esconder que faltan los costos de los
- * productos más vendidos, y eso es lo que de verdad compromete la cifra de
- * ganancia.
+ * Warns how trustworthy the profit figure shown actually is: what
+ * percentage of the period's REVENUE is backed by a known product cost.
+ * It relies on revenue_covered_pct, not the catalog pct — a mostly-covered
+ * catalog can hide the fact that the best sellers' costs are missing, and
+ * that's what actually compromises the profit figure.
  *
  * @param {Object}                                                                                                               props
  * @param {{products_with_cost:number, products_total:number, pct:number, revenue_covered_pct:number, revenue_uncovered:number}} props.coverage

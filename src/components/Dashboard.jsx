@@ -18,10 +18,10 @@ const RANGES = [
 	{ key: 'custom', label: 'Custom' },
 ];
 
-// Solo para QA visual durante esta fase de andamiaje — window.profitLensData
-// lo trae class-assets.php únicamente cuando WP_DEBUG está activo, así que
-// nunca aparece para un usuario real. Cuando el motor de cálculo esté
-// conectado, este switcher y la dependencia de src/data/mock.js se van.
+// Only for visual QA during this scaffolding phase — window.profitLensData
+// only gets this from class-assets.php when WP_DEBUG is on, so it never
+// shows up for a real user. Once the calculation engine is wired up, this
+// switcher and the src/data/mock.js dependency go away.
 const PREVIEW_STATES = [ 'ready', 'empty', 'loading' ];
 
 function DevStateSwitcher( { state, onChange } ) {

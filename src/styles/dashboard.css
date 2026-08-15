@@ -1,7 +1,7 @@
 /**
- * Estilos del dashboard. Valores calcados del export de Figma Make usado
- * como referencia visual (ver "Profit analytics dashboard" en el repo) —
- * mismos tamaños, paddings y colores, reconstruidos sin Tailwind.
+ * Dashboard styles. Values mirror the Figma Make export used as a visual
+ * reference (see "Profit analytics dashboard" in the dev repo) — same
+ * sizes, paddings, and colors, rebuilt without Tailwind.
  */
 
 /* ── Card shell ────────────────────────────────────────────────────────── */
@@ -754,7 +754,7 @@
 	margin: 0 auto;
 }
 
-/* ── Dev preview switcher (solo cuando WP_DEBUG está activo) ──────────── */
+/* ── Dev preview switcher (only shown when WP_DEBUG is on) ─────────────── */
 
 .pl-dev-switcher {
 	display: flex;

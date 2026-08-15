@@ -1,8 +1,8 @@
 <?php
 /**
- * Bootstrap del plugin. Singleton, registra el autoloader propio y arma
- * las piezas (admin, assets, REST) una vez que sabemos que WooCommerce
- * está activo.
+ * Plugin bootstrap. Singleton, registers the plugin's own autoloader, and
+ * wires up the pieces (admin, assets, REST) once we know WooCommerce is
+ * active.
  *
  * @package ProfitLens
  */
@@ -17,9 +17,9 @@ class ProfitLens_Plugin {
 	private static $instance = null;
 
 	/**
-	 * Mapa clase → archivo relativo a includes/. Autoloader explícito en vez
-	 * de PSR-4 por convención de nombres (class-admin.php, no Admin.php) —
-	 * el mismo patrón de includes que usa WooCommerce core.
+	 * Class → file map, relative to includes/. Explicit autoloader instead
+	 * of PSR-4, to keep WordPress-core file naming (class-admin.php, not
+	 * Admin.php) — the same includes pattern WooCommerce core uses.
 	 *
 	 * @var array<string,string>
 	 */
@@ -47,7 +47,7 @@ class ProfitLens_Plugin {
 	public $rest_controller;
 
 	/**
-	 * Devuelve (y crea si hace falta) la instancia única del plugin.
+	 * Returns (and creates, if needed) the plugin's single instance.
 	 *
 	 * @return ProfitLens_Plugin
 	 */
@@ -72,9 +72,9 @@ class ProfitLens_Plugin {
 	}
 
 	/**
-	 * Autoloader de clases del plugin.
+	 * Autoloader for the plugin's classes.
 	 *
-	 * @param string $class Nombre de la clase solicitada.
+	 * @param string $class Requested class name.
 	 */
 	public function autoload( $class ) {
 		if ( ! isset( self::$class_map[ $class ] ) ) {
@@ -85,8 +85,8 @@ class ProfitLens_Plugin {
 	}
 
 	/**
-	 * Instancia las piezas del plugin. Cada clase engancha sus propios hooks
-	 * en su constructor.
+	 * Instantiates the plugin's pieces. Each class wires up its own hooks
+	 * in its constructor.
 	 */
 	private function init() {
 		$this->admin           = new ProfitLens_Admin();
@@ -115,7 +115,7 @@ class ProfitLens_Plugin {
 			<p>
 				<?php
 				esc_html_e(
-					'Profit Lens requiere WooCommerce activo para funcionar.',
+					'Profit Lens requires WooCommerce to be active.',
 					'profit-lens'
 				);
 				?>
@@ -125,8 +125,8 @@ class ProfitLens_Plugin {
 	}
 
 	/**
-	 * Callback de activación. No corre el motor de cálculo: solo prepara el
-	 * terreno (flush de rewrite rules para los endpoints REST).
+	 * Activation callback. Doesn't run the calculation engine: it only
+	 * prepares the ground (flushing rewrite rules for the REST endpoints).
 	 */
 	public static function activate() {
 		flush_rewrite_rules();

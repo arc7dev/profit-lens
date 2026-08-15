@@ -1,12 +1,12 @@
 /**
- * Preview borroso de las métricas Pro (ROAS por campaña, gasto de ads vs.
- * ganancia) con overlay de upsell. Esto NO es funcionalidad bloqueada en el
- * sentido de la Regla 5 de WordPress.org — es un preview visual de algo
- * que requiere conectar una cuenta externa (Meta/Google Ads), no un
- * cálculo que el plugin ya hizo y esconde.
+ * Blurred preview of the Pro metrics (ROAS by campaign, ad spend vs.
+ * profit) with an upsell overlay. This is NOT gated functionality in the
+ * WordPress.org Guideline 5 sense — it's a visual preview of something
+ * that requires connecting an external account (Meta/Google Ads), not a
+ * calculation the plugin already did and is hiding.
  *
- * Datos de campañas hardcodeados solo para el preview borroso; nunca se
- * calculan ni se muestran nítidos en el plugin free.
+ * Campaign data is hardcoded, only for the blurred preview; it's never
+ * calculated or shown in full in the free plugin.
  */
 const CAMPAIGNS = [
 	{ label: 'Meta — Retargeting', roas: 4.2, spend: 340 },

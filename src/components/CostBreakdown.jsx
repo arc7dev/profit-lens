@@ -1,8 +1,7 @@
 /**
- * Desglose de costos en barras horizontales. Las entradas marcadas
- * is_estimated (p. ej. comisiones de pasarela sin dato exacto) llevan una
- * etiqueta "est." — un costo, no una alarma, así que no usa color de
- * pérdida.
+ * Cost breakdown as horizontal bars. Entries flagged is_estimated (e.g.
+ * gateway fees without an exact figure) carry an "est." label — it's a
+ * cost, not an alarm, so it doesn't use the loss color.
  *
  * @param {Object}                                                              props
  * @param {Array<{key:string,label:string,amount:number,is_estimated:boolean}>} props.items
@@ -17,8 +16,8 @@ export default function CostBreakdown( { items } ) {
 			<div className="pl-cost-list">
 				{ items.map( ( item, i ) => {
 					const pct = total > 0 ? ( item.amount / total ) * 100 : 0;
-					// Misma rampa de opacidad que el diseño de referencia:
-					// un solo tono, más tenue mientras más abajo está en la lista.
+					// Same opacity ramp as the reference design: a single
+					// hue, fading further down the list.
 					const opacity = [ 1, 0.55, 0.38, 0.22 ][ i ] ?? 0.22;
 
 					return (

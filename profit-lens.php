@@ -2,10 +2,10 @@
 /**
  * Plugin Name:       Profit Lens — Profit Analytics for WooCommerce
  * Plugin URI:         https://arc7.dev/profit-lens
- * Description:        Muestra la ganancia real de tu tienda WooCommerce — no solo las
- *                      ventas — restando comisiones de pasarela, envío y reembolsos
- *                      del costo de tus productos. 100% self-hosted, tus datos no
- *                      salen de tu sitio.
+ * Description:        Shows the real profit of your WooCommerce store — not just
+ *                      sales — by subtracting gateway fees, shipping, and refunds
+ *                      from your product cost. 100% self-hosted, your data never
+ *                      leaves your site.
  * Version:            0.1.0
  * Requires at least:  6.4
  * Requires PHP:       7.4
@@ -23,7 +23,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// ── Constantes ──────────────────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────────────────
 
 define( 'PROFITLENS_VERSION', '0.1.0' );
 define( 'PROFITLENS_PLUGIN_FILE', __FILE__ );
@@ -33,19 +33,19 @@ define( 'PROFITLENS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'PROFITLENS_TEXT_DOMAIN', 'profit-lens' );
 
 // ── Autoload ─────────────────────────────────────────────────────────────────
-// Autoloader propio (no Composer en runtime): los archivos de producción de un
-// plugin de WordPress.org no pueden depender de que el usuario corra
-// `composer install`. Composer solo se usa para dev/PHPUnit (ver composer.json).
+// Own autoloader (no Composer at runtime): a WordPress.org plugin's production
+// files can't depend on the user having run `composer install`. Composer is
+// only used for dev/PHPUnit (see composer.json).
 
 require_once PROFITLENS_PLUGIN_DIR . 'includes/class-plugin.php';
 
-// ── Activación / desactivación ─────────────────────────────────────────────
+// ── Activation / deactivation ─────────────────────────────────────────────────
 
 register_activation_hook( __FILE__, array( 'ProfitLens_Plugin', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'ProfitLens_Plugin', 'deactivate' ) );
 
-// ── Arranque ─────────────────────────────────────────────────────────────────
-// En 'plugins_loaded' porque el plugin depende de clases de WooCommerce
-// (WC_Order, WC_Product) que todavía no existen antes de ese hook.
+// ── Bootstrap ────────────────────────────────────────────────────────────────
+// On 'plugins_loaded' because the plugin depends on WooCommerce classes
+// (WC_Order, WC_Product) that don't exist yet before that hook.
 
 add_action( 'plugins_loaded', array( 'ProfitLens_Plugin', 'instance' ) );

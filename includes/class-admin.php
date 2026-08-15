@@ -1,6 +1,6 @@
 <?php
 /**
- * Registra la página de admin bajo el menú de WooCommerce.
+ * Registers the admin page under the WooCommerce menu.
  *
  * @package ProfitLens
  */
@@ -10,14 +10,14 @@ defined( 'ABSPATH' ) || exit;
 class ProfitLens_Admin {
 
 	/**
-	 * Slug de la página de admin. Lo reutilizan ProfitLens_Assets (para saber
-	 * en qué pantalla encolar) y el propio menú.
+	 * Admin page slug. Reused by ProfitLens_Assets (to know which screen
+	 * to enqueue on) and by the menu registration itself.
 	 */
 	const PAGE_SLUG = 'profit-lens';
 
 	/**
-	 * Hook suffix que devuelve add_submenu_page(), lo necesita
-	 * ProfitLens_Assets para encolar solo en esta pantalla.
+	 * Hook suffix returned by add_submenu_page(), needed by
+	 * ProfitLens_Assets to enqueue only on this screen.
 	 *
 	 * @var string
 	 */
@@ -28,9 +28,9 @@ class ProfitLens_Admin {
 	}
 
 	/**
-	 * Cuelga "Profit Lens" del menú de WooCommerce, no del menú raíz — la
-	 * herramienta vive donde el usuario ya espera encontrar analítica de
-	 * su tienda.
+	 * Hangs "Profit Lens" off the WooCommerce menu, not the top-level
+	 * menu — the tool lives where the user already expects to find their
+	 * store's analytics.
 	 */
 	public function register_menu() {
 		$this->hook_suffix = add_submenu_page(
@@ -44,14 +44,14 @@ class ProfitLens_Admin {
 	}
 
 	/**
-	 * Punto de montaje para React. Todo el layout lo resuelve el bundle de
-	 * src/index.js — este método solo imprime el contenedor.
+	 * Mount point for React. The bundle in src/index.js resolves the
+	 * whole layout — this method only prints the container.
 	 */
 	public function render_page() {
 		?>
 		<div id="profitlens-root" class="profitlens-root">
 			<noscript>
-				<?php esc_html_e( 'Profit Lens necesita JavaScript habilitado para mostrar el dashboard.', 'profit-lens' ); ?>
+				<?php esc_html_e( 'Profit Lens needs JavaScript enabled to show the dashboard.', 'profit-lens' ); ?>
 			</noscript>
 		</div>
 		<?php
