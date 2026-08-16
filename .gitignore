@@ -18,5 +18,14 @@ vendor/
 # Logs
 *.log
 
+# Local PHPUnit DB config — environment-specific credentials, never the
+# same two machines. tests/bootstrap.php looks for this file; each dev
+# creates their own from a wp-tests-config-sample.php-style reference
+# (see tests/wp-tests-config.php in this environment for the shape).
+tests/wp-tests-config.php
+
 # Editor / OS
 .DS_Store
+
+# PHPUnit run cache
+.phpunit.result.cache

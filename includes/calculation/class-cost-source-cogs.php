@@ -38,6 +38,22 @@ class ProfitLens_Cost_Source_Cogs implements ProfitLens_Cost_Source {
 	}
 
 	/**
+	 * The `null !== get_cogs_value()` check below can never actually see
+	 * an explicit $0 today, only "set or not" — confirmed against a live
+	 * install (including writing '_cogs_total_value' via raw SQL and
+	 * loading a product object that had never touched that row before, to
+	 * rule out caching): WooCommerce's own
+	 * WC_Product_Data_Store_CPT::read_product_data() loads the stored
+	 * value through set_props(), which runs it through the same
+	 * set_cogs_value() → adjust_cogs_value_before_set() that collapses
+	 * `0.0 === $value` to null on write. So it collapses on *read* too, no
+	 * matter how the "0" got into the database — WooCommerce makes an
+	 * explicit $0 cost and "no cost set" indistinguishable, on every path,
+	 * not just through this plugin's own set_cogs_value() calls. The
+	 * null-check stays anyway: it's correct and forward-compatible if
+	 * WooCommerce ever changes this, it just won't currently take the
+	 * "true" branch for a genuine 0.0 — only for a genuinely unset value.
+	 *
 	 * @param WC_Product $product
 	 * @return bool
 	 */

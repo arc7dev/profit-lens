@@ -10,15 +10,25 @@
 
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';
 
+// tests/wp-tests-config.php (gitignored — this environment's DB creds
+// only). WP_TESTS_CONFIG_FILE_PATH, when defined, is used as the exact
+// file path by wp-phpunit's own bootstrap — not a directory it appends
+// a filename to (that only happens in its own fallback branch).
+if ( ! defined( 'WP_TESTS_CONFIG_FILE_PATH' ) ) {
+	define( 'WP_TESTS_CONFIG_FILE_PATH', __DIR__ . '/wp-tests-config.php' );
+}
+
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 
 if ( ! $_tests_dir ) {
-	$_tests_dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/wordpress-tests-lib';
+	// Ships as a dev dependency (composer.json) so `composer install` is
+	// enough — no separate SVN/wp-cli scaffold step needed.
+	$_tests_dir = dirname( __DIR__ ) . '/vendor/wp-phpunit/wp-phpunit';
 }
 
 if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 	echo "Could not find the WordPress test suite at \"{$_tests_dir}\".\n";
-	echo "Install it with bin/install-wp-tests.sh (see wp-cli/wp-cli or wp-phpunit/wp-phpunit).\n";
+	echo "Run `composer install` (brings in wp-phpunit/wp-phpunit), or set WP_TESTS_DIR yourself.\n";
 	exit( 1 );
 }
 
@@ -34,6 +44,14 @@ function profitlens_tests_manually_load_plugin() {
 	if ( file_exists( $woocommerce ) ) {
 		require $woocommerce;
 	}
+
+	// Cost of Goods Sold is off by default (WC 10.3+) — the fixtures in
+	// ProfitLens_Calculation_Test_Case call set_cogs_value()/
+	// get_cogs_value() directly, which are no-ops with a _doing_it_wrong
+	// notice while the feature is disabled (same reason the seeder does
+	// this for the real site — see class-profitlens-seeder-command.php).
+	// Has to happen before WooCommerce's own init reads it.
+	update_option( 'woocommerce_feature_cost_of_goods_sold_enabled', 'yes' );
 
 	require dirname( __DIR__ ) . '/profit-lens.php';
 }
