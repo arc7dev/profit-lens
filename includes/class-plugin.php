@@ -24,11 +24,18 @@ class ProfitLens_Plugin {
 	 * @var array<string,string>
 	 */
 	private static $class_map = array(
-		'ProfitLens_Admin'           => 'class-admin.php',
-		'ProfitLens_Assets'          => 'class-assets.php',
-		'ProfitLens_REST_Controller' => 'class-rest-controller.php',
-		'ProfitLens_Profit_Engine'   => 'calculation/class-profit-engine.php',
-		'ProfitLens_Cost_Source'     => 'calculation/interface-cost-source.php',
+		'ProfitLens_Admin'                      => 'class-admin.php',
+		'ProfitLens_Assets'                     => 'class-assets.php',
+		'ProfitLens_REST_Controller'             => 'class-rest-controller.php',
+		'ProfitLens_CLI_Verify'                  => 'class-cli-verify.php',
+		'ProfitLens_Profit_Engine'               => 'calculation/class-profit-engine.php',
+		'ProfitLens_Cost_Source'                 => 'calculation/interface-cost-source.php',
+		'ProfitLens_Cost_Source_Cogs'             => 'calculation/class-cost-source-cogs.php',
+		'ProfitLens_Cost_Component'               => 'calculation/interface-cost-component.php',
+		'ProfitLens_Cost_Component_Product'       => 'calculation/class-cost-component-product.php',
+		'ProfitLens_Cost_Component_Refunds'       => 'calculation/class-cost-component-refunds.php',
+		'ProfitLens_Cost_Component_Shipping'      => 'calculation/class-cost-component-shipping.php',
+		'ProfitLens_Cost_Component_Gateway_Fees'  => 'calculation/class-cost-component-gateway-fees.php',
 	);
 
 	/**
@@ -92,6 +99,10 @@ class ProfitLens_Plugin {
 		$this->admin           = new ProfitLens_Admin();
 		$this->assets          = new ProfitLens_Assets();
 		$this->rest_controller = new ProfitLens_REST_Controller();
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			ProfitLens_CLI_Verify::register();
+		}
 	}
 
 	private function load_textdomain() {
