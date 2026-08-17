@@ -11,10 +11,24 @@
  * itself:
  *   1. A per-status breakdown (order count, order total, shipping, tax,
  *      discounts) computed directly via WC_Order getters.
- *   2. ProfitLens_Profit_Engine::get_summary() for the same range,
- *      restricted to completed+processing — its `revenue` (product lines
- *      + shipping, tax excluded) is compared against the matching slice
- *      of computation 1.
+ *   2. Per ORDER (not just in aggregate), the engine's revenue for a
+ *      completed/processing order compared against that same order's own
+ *      (total - tax).
+ *
+ * Why per-order, not one aggregate number: an early version of this
+ * command compared only the aggregate totals against a tolerance scaled by
+ * order count ("rounding noise, proportional to volume"). It wasn't —
+ * the first real discrepancy found this way was $40.00 in two completely
+ * different order sets (a real accumulated-rounding delta would not repeat
+ * exactly), and turned out to be 4 specific orders off by exactly $10.00
+ * each, traced to a source-data defect (see profitlens-seeder's
+ * step_orders() for the fix and the full story). A tolerance formula would
+ * have hidden that forever behind a passing check. Comparing every order
+ * individually means a real mismatch always names the exact order(s)
+ * responsible instead of leaving a mystery delta to hunt down by hand —
+ * and the aggregate tolerance is gone in favor of a fixed cent-level
+ * epsilon (self::PER_ORDER_EPSILON) that only accounts for float rounding
+ * within a single order's own arithmetic, never for volume.
  *
  * Only registered under WP-CLI; never loaded on a normal request.
  *
@@ -24,6 +38,14 @@
 defined( 'ABSPATH' ) || exit;
 
 class ProfitLens_CLI_Verify {
+
+	/**
+	 * Cent-level float-rounding allowance for a SINGLE order's own
+	 * arithmetic — not a tolerance that scales with how many orders are
+	 * being checked. Any order whose diff exceeds this is a named,
+	 * reported mismatch, never silently absorbed.
+	 */
+	const PER_ORDER_EPSILON = 0.01;
 
 	/**
 	 * Registers this as a subcommand of the `profitlens` namespace,
@@ -101,51 +123,72 @@ class ProfitLens_CLI_Verify {
 		}
 
 		$counted_statuses = array( 'wc-completed', 'wc-processing' );
-		$expected_revenue = 0.0;
+		$engine           = ProfitLens_Profit_Engine::create_default();
+		$engine_orders    = $this->get_orders( $after, $before, $counted_statuses, $exclude_meta_key );
 
-		foreach ( $counted_statuses as $status ) {
-			if ( isset( $breakdown[ $status ] ) ) {
-				// Direct-CRUD "total" includes tax; the engine's revenue
-				// doesn't, so subtract it here for a like-for-like check.
-				$expected_revenue += $breakdown[ $status ]['total'] - $breakdown[ $status ]['tax'];
+		$engine_revenue = 0.0;
+		$direct_revenue = 0.0;
+		$mismatches     = array();
+
+		foreach ( $engine_orders as $order ) {
+			$engine_rev = round( $engine->get_order_revenue( $order ), 2 );
+			// Per-order equivalent of "direct CRUD total": the order's own
+			// authoritative total, tax excluded (same reason the engine
+			// excludes it — it's never the merchant's money).
+			$direct = round( (float) $order->get_total() - (float) $order->get_total_tax(), 2 );
+			$diff   = round( $engine_rev - $direct, 2 );
+
+			$engine_revenue += $engine_rev;
+			$direct_revenue += $direct;
+
+			if ( abs( $diff ) > self::PER_ORDER_EPSILON ) {
+				$mismatches[] = array(
+					'id'     => $order->get_id(),
+					'status' => $order->get_status(),
+					'engine' => $engine_rev,
+					'direct' => $direct,
+					'diff'   => $diff,
+				);
 			}
 		}
 
-		$engine       = ProfitLens_Profit_Engine::create_default();
-		$engine_orders = $this->get_orders( $after, $before, $counted_statuses, $exclude_meta_key );
-		$engine_revenue = 0.0;
-
-		foreach ( $engine_orders as $order ) {
-			$engine_revenue += $engine->get_order_revenue( $order );
-		}
-
 		$engine_revenue = round( $engine_revenue, 2 );
-		$expected_revenue = round( $expected_revenue, 2 );
-		$delta = round( $engine_revenue - $expected_revenue, 2 );
+		$direct_revenue = round( $direct_revenue, 2 );
+		$delta          = round( $engine_revenue - $direct_revenue, 2 );
 
 		WP_CLI::log( '' );
 		WP_CLI::log( sprintf( 'Engine revenue (completed+processing, product lines + shipping): %.2f', $engine_revenue ) );
-		WP_CLI::log( sprintf( 'Direct CRUD equivalent (total - tax, same orders):                %.2f', $expected_revenue ) );
+		WP_CLI::log( sprintf( 'Direct CRUD equivalent (total - tax, same orders):                %.2f', $direct_revenue ) );
 
-		// Currency-float summation over thousands of orders accumulates
-		// sub-cent rounding noise (confirmed empirically: ~$0.02/order on
-		// a 2,362-order sample, unrelated to tax/discount handling, which
-		// matched exactly). A tolerance proportional to order count avoids
-		// a false failure from that noise while still catching a real
-		// calculation bug, which would produce a delta orders of magnitude
-		// larger.
-		$tolerance = max( 0.05, 0.02 * count( $engine_orders ) );
-
-		if ( abs( $delta ) > $tolerance ) {
-			WP_CLI::error( sprintf(
-				'MISMATCH: delta of %.2f across %d orders exceeds tolerance of %.2f. This means a real bug in the engine, not rounding noise — do not proceed.',
-				$delta,
+		if ( $mismatches ) {
+			WP_CLI::log( '' );
+			WP_CLI::log( sprintf(
+				'%d of %d orders account for the entire %.2f delta — not spread across the rest:',
+				count( $mismatches ),
 				count( $engine_orders ),
-				$tolerance
+				$delta
 			) );
+			WP_CLI::log( sprintf( '%-10s %-12s %10s %10s %8s', 'order', 'status', 'engine', 'direct', 'diff' ) );
+
+			foreach ( $mismatches as $m ) {
+				WP_CLI::log( sprintf(
+					'%-10d %-12s %10.2f %10.2f %+8.2f',
+					$m['id'],
+					$m['status'],
+					$m['engine'],
+					$m['direct'],
+					$m['diff']
+				) );
+			}
+
+			WP_CLI::error(
+				'Revenue mismatch traced to the specific order(s) listed above — not rounding noise. ' .
+				'Investigate each one (this is exactly how the $10-per-order coupon data defect fixed in ' .
+				'profitlens-seeder was found) before trusting the numbers.'
+			);
 		}
 
-		WP_CLI::success( sprintf( 'Engine revenue matches direct CRUD sum (delta %.2f, within tolerance %.2f).', $delta, $tolerance ) );
+		WP_CLI::success( sprintf( 'Engine revenue matches (order total - tax) exactly for all %d counted orders (delta %.2f).', count( $engine_orders ), $delta ) );
 	}
 
 	/**
