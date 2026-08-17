@@ -77,6 +77,43 @@
 	font-weight: 500;
 }
 
+/* Dropdown wraps its toggle in an extra element, breaking the plain
+ * :first-child/adjacency styling above for whichever range button becomes
+ * the custom picker's trigger — restated explicitly here instead. */
+.pl-range__custom {
+	display: flex;
+}
+
+.pl-range__custom .pl-range__btn {
+	border-left: 1px solid var(--pl-color-border);
+}
+
+.pl-custom-range__popover {
+	padding: 16px;
+}
+
+.pl-custom-range__calendars {
+	display: flex;
+	gap: 16px;
+}
+
+.pl-custom-range__label {
+	font-size: 11px;
+	color: var(--pl-color-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin-bottom: 6px;
+}
+
+.pl-custom-range__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--pl-color-border);
+}
+
 /* ── KPI cards ─────────────────────────────────────────────────────────── */
 
 .pl-kpis {
@@ -711,16 +748,16 @@
 	color: var(--pl-color-text);
 }
 
-/* ── Error state ───────────────────────────────────────────────────────── */
+/* ── Notice states (error, no-orders) ─────────────────────────────────── */
 
-.pl-error-wrap {
+.pl-notice-wrap {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	padding: 60px 24px;
 }
 
-.pl-error__card {
+.pl-notice__card {
 	background: var(--pl-color-surface);
 	border: 1px solid var(--pl-color-border);
 	border-radius: var(--pl-radius);
@@ -734,11 +771,11 @@
 	box-shadow: 0 1px 4px rgba(18, 33, 46, 0.06);
 }
 
-.pl-error__icon {
+.pl-notice__icon {
 	margin-bottom: 18px;
 }
 
-.pl-error__title {
+.pl-notice__title {
 	font-family: var(--pl-font-sans);
 	font-size: 16px;
 	font-weight: 600;
@@ -746,7 +783,7 @@
 	margin: 0 0 10px;
 }
 
-.pl-error__copy {
+.pl-notice__copy {
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
 	color: var(--pl-color-muted);
@@ -755,21 +792,32 @@
 	max-width: 320px;
 }
 
-.pl-error__cta {
+.pl-notice__cta {
 	width: 100%;
 	font-family: var(--pl-font-mono);
 	font-size: 12px;
 	font-weight: 500;
-	color: var(--pl-color-surface);
-	background: var(--pl-color-loss);
-	border: 1px solid var(--pl-color-loss);
+	color: var(--pl-color-text);
+	background: var(--pl-color-accent);
+	border: 1px solid var(--pl-color-accent);
 	border-radius: var(--pl-radius);
 	padding: 10px 20px;
 	cursor: pointer;
-	transition: opacity 0.15s;
+	transition: opacity 0.15s, background 0.15s;
 }
 
-.pl-error__cta:hover {
+.pl-notice__cta:hover {
+	background: var(--pl-color-accent-strong);
+}
+
+.pl-notice__cta--danger {
+	color: var(--pl-color-surface);
+	background: var(--pl-color-loss);
+	border-color: var(--pl-color-loss);
+}
+
+.pl-notice__cta--danger:hover {
+	background: var(--pl-color-loss);
 	opacity: 0.9;
 }
 
