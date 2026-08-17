@@ -1,9 +1,15 @@
 import { useState } from '@wordpress/element';
 
-import { getMockEmptySummary, getMockSummary } from '../data/mock';
+import {
+	getMockEmptySummary,
+	getMockErrorSummary,
+	getMockSummary,
+} from '../data/mock';
+import { useSummary } from '../hooks/useSummary';
 import CostBreakdown from './CostBreakdown';
 import CostCoverageNotice from './CostCoverageNotice';
 import EmptyState from './EmptyState';
+import ErrorState from './ErrorState';
 import InsightBar from './InsightBar';
 import KpiCard from './KpiCard';
 import LoadingState from './LoadingState';
@@ -18,29 +24,34 @@ const RANGES = [
 	{ key: 'custom', label: 'Custom' },
 ];
 
-// Only for visual QA during this scaffolding phase — window.profitLensData
-// only gets this from class-assets.php when WP_DEBUG is on, so it never
-// shows up for a real user. Once the calculation engine is wired up, this
-// switcher and the src/data/mock.js dependency go away.
-const PREVIEW_STATES = [ 'ready', 'empty', 'loading' ];
+// Dev-only override on top of the real dashboard (useSummary(), fetched
+// from the REST endpoint) — lets anyone with WP_DEBUG on force a specific
+// view for visual QA/screenshots without needing a store actually in that
+// state. Never active on load: a fresh page always shows live data first;
+// clicking an override button is what turns this on, and clicking the same
+// button again turns it back off.
+const PREVIEW_STATES = [ 'ready', 'empty', 'loading', 'error' ];
 
-function DevStateSwitcher( { state, onChange } ) {
+function DevStateSwitcher( { override, onChange } ) {
 	return (
 		<div className="pl-dev-switcher">
-			<span>Preview (WP_DEBUG only):</span>
+			<span>Preview override (WP_DEBUG only):</span>
 			{ PREVIEW_STATES.map( ( s ) => (
 				<button
 					key={ s }
 					type="button"
 					className={
 						'pl-dev-switcher__btn' +
-						( state === s ? ' pl-dev-switcher__btn--active' : '' )
+						( override === s
+							? ' pl-dev-switcher__btn--active'
+							: '' )
 					}
-					onClick={ () => onChange( s ) }
+					onClick={ () => onChange( override === s ? null : s ) }
 				>
 					{ s }
 				</button>
 			) ) }
+			{ ! override && <span>(showing live data)</span> }
 		</div>
 	);
 }
@@ -52,40 +63,85 @@ function formatCurrency( amount ) {
 
 export default function Dashboard() {
 	const [ rangeKey, setRangeKey ] = useState( '30d' );
-	const [ previewState, setPreviewState ] = useState( 'ready' );
+	const [ previewOverride, setPreviewOverride ] = useState( null );
 
 	const isDebug = Boolean(
 		window.profitLensData && window.profitLensData.isDebug
 	);
 
-	if ( previewState === 'loading' ) {
+	// Always called (rules of hooks) — its result is simply unused while a
+	// preview override is active. The background fetch it triggers is
+	// harmless in that case; this is a WP_DEBUG-only affordance, not
+	// something a real user ever hits.
+	const live = useSummary( rangeKey );
+
+	const switcher = isDebug && (
+		<DevStateSwitcher
+			override={ previewOverride }
+			onChange={ setPreviewOverride }
+		/>
+	);
+
+	const isLoading = previewOverride
+		? previewOverride === 'loading'
+		: live.isLoading;
+
+	if ( isLoading ) {
 		return (
 			<>
-				{ isDebug && (
-					<DevStateSwitcher
-						state={ previewState }
-						onChange={ setPreviewState }
-					/>
-				) }
+				{ switcher }
 				<LoadingState />
 			</>
 		);
 	}
 
-	const data =
-		previewState === 'empty'
-			? getMockEmptySummary( rangeKey )
-			: getMockSummary( rangeKey );
+	// live.error is a transport-level failure (network, permissions, a
+	// non-2xx response) — distinct from the REST contract's own
+	// status: "error", which arrives as an ordinary 200 response and is
+	// handled below via `data.status`.
+	if ( ! previewOverride && live.error ) {
+		return (
+			<>
+				{ switcher }
+				<ErrorState message="Couldn't load profit data. Please try again." />
+			</>
+		);
+	}
+
+	let data;
+
+	if ( previewOverride === 'empty' ) {
+		data = getMockEmptySummary( rangeKey );
+	} else if ( previewOverride === 'ready' ) {
+		data = getMockSummary( rangeKey );
+	} else if ( previewOverride === 'error' ) {
+		data = getMockErrorSummary();
+	} else {
+		data = live.data;
+	}
+
+	if ( ! data ) {
+		return (
+			<>
+				{ switcher }
+				<LoadingState />
+			</>
+		);
+	}
+
+	if ( data.status === 'error' ) {
+		return (
+			<>
+				{ switcher }
+				<ErrorState message={ data.error && data.error.message } />
+			</>
+		);
+	}
 
 	if ( data.status === 'empty' ) {
 		return (
 			<>
-				{ isDebug && (
-					<DevStateSwitcher
-						state={ previewState }
-						onChange={ setPreviewState }
-					/>
-				) }
+				{ switcher }
 				<EmptyState />
 			</>
 		);
@@ -105,12 +161,7 @@ export default function Dashboard() {
 
 	return (
 		<div>
-			{ isDebug && (
-				<DevStateSwitcher
-					state={ previewState }
-					onChange={ setPreviewState }
-				/>
-			) }
+			{ switcher }
 
 			<div className="pl-header">
 				<div>
@@ -145,7 +196,11 @@ export default function Dashboard() {
 					tone={ isNetLoss ? 'loss' : 'profit' }
 					label="Net Profit"
 					value={ formatCurrency( kpis.net_profit.amount ) }
-					sub={ `▲ ${ kpis.net_profit.change_pct }% vs prior period` }
+					sub={
+						null === kpis.net_profit.change_pct
+							? 'vs prior period'
+							: `▲ ${ kpis.net_profit.change_pct }% vs prior period`
+					}
 				/>
 				<KpiCard
 					label="Net Margin"

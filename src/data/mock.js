@@ -299,4 +299,20 @@ export function getMockEmptySummary( rangeKey = '30d' ) {
 	};
 }
 
+/**
+ * "error" response — WooCommerce inactive or a calculation failure,
+ * matching ProfitLens_REST_Controller::build_error_response()'s shape.
+ *
+ * @return {Object} Response with status "error" and the same shape as the REST endpoint.
+ */
+export function getMockErrorSummary() {
+	return {
+		status: 'error',
+		error: {
+			code: 'calculation_failed',
+			message: 'Profit Lens could not calculate profit for this period.',
+		},
+	};
+}
+
 export const RANGE_KEYS = Object.keys( RANGES );

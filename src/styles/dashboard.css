@@ -711,6 +711,68 @@
 	color: var(--pl-color-text);
 }
 
+/* ── Error state ───────────────────────────────────────────────────────── */
+
+.pl-error-wrap {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 24px;
+}
+
+.pl-error__card {
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+	padding: 40px 44px 36px;
+	width: 420px;
+	max-width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	box-shadow: 0 1px 4px rgba(18, 33, 46, 0.06);
+}
+
+.pl-error__icon {
+	margin-bottom: 18px;
+}
+
+.pl-error__title {
+	font-family: var(--pl-font-sans);
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--pl-color-text);
+	margin: 0 0 10px;
+}
+
+.pl-error__copy {
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	color: var(--pl-color-muted);
+	line-height: 1.6;
+	margin: 0 0 24px;
+	max-width: 320px;
+}
+
+.pl-error__cta {
+	width: 100%;
+	font-family: var(--pl-font-mono);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--pl-color-surface);
+	background: var(--pl-color-loss);
+	border: 1px solid var(--pl-color-loss);
+	border-radius: var(--pl-radius);
+	padding: 10px 20px;
+	cursor: pointer;
+	transition: opacity 0.15s;
+}
+
+.pl-error__cta:hover {
+	opacity: 0.9;
+}
+
 /* ── Loading skeleton ──────────────────────────────────────────────────── */
 
 @keyframes pl-shimmer {
