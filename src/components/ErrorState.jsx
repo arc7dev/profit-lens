@@ -17,9 +17,9 @@ export default function ErrorState( { message } ) {
 				</div>
 			</div>
 
-			<div className="pl-error-wrap">
-				<div className="pl-error__card">
-					<div className="pl-error__icon" aria-hidden="true">
+			<div className="pl-notice-wrap">
+				<div className="pl-notice__card">
+					<div className="pl-notice__icon" aria-hidden="true">
 						<svg
 							width="36"
 							height="36"
@@ -46,18 +46,18 @@ export default function ErrorState( { message } ) {
 						</svg>
 					</div>
 
-					<h2 className="pl-error__title">
+					<h2 className="pl-notice__title">
 						Couldn&rsquo;t calculate profit
 					</h2>
 
-					<p className="pl-error__copy">
+					<p className="pl-notice__copy">
 						{ message ||
 							'Profit Lens could not calculate profit for this period.' }
 					</p>
 
 					<button
 						type="button"
-						className="pl-error__cta pl-mono"
+						className="pl-notice__cta pl-notice__cta--danger pl-mono"
 						onClick={ () => window.location.reload() }
 					>
 						Try again
