@@ -269,9 +269,16 @@ class ProfitLens_Profit_Engine {
 	/**
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
+	 * @param bool              $lite  When true, skips every part of this
+	 *                                  pass that only exists to feed the
+	 *                                  chart/products/coverage sections of
+	 *                                  get_summary() — see get_net_profit().
+	 *                                  revenue and cost_totals (the only
+	 *                                  two things a profit figure needs)
+	 *                                  are computed identically either way.
 	 * @return array
 	 */
-	private function aggregate( DateTimeInterface $after, DateTimeInterface $before ) {
+	private function aggregate( DateTimeInterface $after, DateTimeInterface $before, $lite = false ) {
 		$orders = $this->get_counted_orders( $after, $before );
 
 		$revenue           = 0.0;
@@ -297,7 +304,10 @@ class ProfitLens_Profit_Engine {
 			// it twice (once implicitly via
 			// ProfitLens_Cost_Component_Product::calculate(), once
 			// explicitly for the breakdown below) used to do exactly that
-			// redundant work on every single get_summary() call.
+			// redundant work on every single get_summary() call. It can't
+			// be skipped even in $lite mode: it's how the product cost
+			// component's own total gets computed, which revenue/cost_totals
+			// need either way.
 			$product_lines     = $this->product_cost->resolve_line_items( $order );
 			$product_cost_total = 0.0;
 
@@ -318,6 +328,15 @@ class ProfitLens_Profit_Engine {
 
 				$order_costs[ $component->get_key() ]  = $amount;
 				$cost_totals[ $component->get_key() ] += $amount;
+			}
+
+			if ( $lite ) {
+				// Everything from here down only feeds chart_by_day,
+				// products, and revenue_covered/uncovered — none of which
+				// get_net_profit() reads. Skipping it doesn't touch a
+				// single query (it was already-loaded, in-memory data
+				// either way); it only cuts the per-order PHP bookkeeping.
+				continue;
 			}
 
 			$order_profit = $order_revenue - array_sum( $order_costs );
@@ -374,6 +393,30 @@ class ProfitLens_Profit_Engine {
 			'revenue_covered'   => $revenue_covered,
 			'revenue_uncovered' => $revenue_uncovered,
 		);
+	}
+
+	/**
+	 * Net profit for a period, and nothing else — built for change_pct's
+	 * prior-period comparison, which only ever reads this one number. Skips
+	 * catalog-wide cost coverage entirely (2 SQL queries that get_summary()
+	 * pays for via format_cost_coverage()/get_catalog_coverage() — coverage
+	 * isn't date-scoped, so the current period's call already has the
+	 * answer; a prior-period call would just ask the same question again)
+	 * and runs aggregate() in $lite mode (skips per-order chart/products
+	 * bookkeeping — no queries either way, since resolve_line_items() still
+	 * runs to compute cost; only the extra array-building on top of
+	 * already-loaded data is skipped).
+	 *
+	 * @param DateTimeInterface $after
+	 * @param DateTimeInterface $before
+	 * @return float
+	 */
+	public function get_net_profit( DateTimeInterface $after, DateTimeInterface $before ) {
+		$data       = $this->aggregate( $after, $before, true );
+		$revenue    = round( $data['revenue'], 2 );
+		$total_cost = round( array_sum( $data['cost_totals'] ), 2 );
+
+		return round( $revenue - $total_cost, 2 );
 	}
 
 	/**
