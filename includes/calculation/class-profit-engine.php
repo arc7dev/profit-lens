@@ -269,9 +269,16 @@ class ProfitLens_Profit_Engine {
 	/**
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
+	 * @param bool              $lite  When true, skips every part of this
+	 *                                  pass that only exists to feed the
+	 *                                  chart/products/coverage sections of
+	 *                                  get_summary() — see get_net_profit().
+	 *                                  revenue and cost_totals (the only
+	 *                                  two things a profit figure needs)
+	 *                                  are computed identically either way.
 	 * @return array
 	 */
-	private function aggregate( DateTimeInterface $after, DateTimeInterface $before ) {
+	private function aggregate( DateTimeInterface $after, DateTimeInterface $before, $lite = false ) {
 		$orders = $this->get_counted_orders( $after, $before );
 
 		$revenue           = 0.0;
@@ -289,12 +296,47 @@ class ProfitLens_Profit_Engine {
 			$order_revenue = $this->get_order_revenue( $order );
 			$revenue      += $order_revenue;
 
+			// Resolved once per order and reused below for both the
+			// product cost component's total AND the per-product
+			// breakdown — resolve_line_items() is the single most
+			// expensive per-order operation here (a get_product_cost()
+			// plus refunded-qty/-amount lookup per line item), and calling
+			// it twice (once implicitly via
+			// ProfitLens_Cost_Component_Product::calculate(), once
+			// explicitly for the breakdown below) used to do exactly that
+			// redundant work on every single get_summary() call. It can't
+			// be skipped even in $lite mode: it's how the product cost
+			// component's own total gets computed, which revenue/cost_totals
+			// need either way.
+			$product_lines     = $this->product_cost->resolve_line_items( $order );
+			$product_cost_total = 0.0;
+
+			foreach ( $product_lines as $line ) {
+				$product_cost_total += $line['line_cost'];
+			}
+
 			$order_costs = array();
 
 			foreach ( $this->all_components() as $component ) {
-				$amount                                = $component->calculate( $order );
+				// Same rounding ProfitLens_Cost_Component_Product::calculate()
+				// itself applies — this branch has to stay in exact sync
+				// with that method's behavior, not just its current
+				// implementation, since it's standing in for a call to it.
+				$amount = ( $component === $this->product_cost )
+					? round( $product_cost_total, 2 )
+					: $component->calculate( $order );
+
 				$order_costs[ $component->get_key() ]  = $amount;
 				$cost_totals[ $component->get_key() ] += $amount;
+			}
+
+			if ( $lite ) {
+				// Everything from here down only feeds chart_by_day,
+				// products, and revenue_covered/uncovered — none of which
+				// get_net_profit() reads. Skipping it doesn't touch a
+				// single query (it was already-loaded, in-memory data
+				// either way); it only cuts the per-order PHP bookkeeping.
+				continue;
 			}
 
 			$order_profit = $order_revenue - array_sum( $order_costs );
@@ -306,7 +348,7 @@ class ProfitLens_Profit_Engine {
 				$chart_by_day[ $day ]  = ( isset( $chart_by_day[ $day ] ) ? $chart_by_day[ $day ] : 0.0 ) + $order_profit;
 			}
 
-			foreach ( $this->product_cost->resolve_line_items( $order ) as $line ) {
+			foreach ( $product_lines as $line ) {
 				if ( ! $line['product'] ) {
 					continue;
 				}
@@ -354,6 +396,30 @@ class ProfitLens_Profit_Engine {
 	}
 
 	/**
+	 * Net profit for a period, and nothing else — built for change_pct's
+	 * prior-period comparison, which only ever reads this one number. Skips
+	 * catalog-wide cost coverage entirely (2 SQL queries that get_summary()
+	 * pays for via format_cost_coverage()/get_catalog_coverage() — coverage
+	 * isn't date-scoped, so the current period's call already has the
+	 * answer; a prior-period call would just ask the same question again)
+	 * and runs aggregate() in $lite mode (skips per-order chart/products
+	 * bookkeeping — no queries either way, since resolve_line_items() still
+	 * runs to compute cost; only the extra array-building on top of
+	 * already-loaded data is skipped).
+	 *
+	 * @param DateTimeInterface $after
+	 * @param DateTimeInterface $before
+	 * @return float
+	 */
+	public function get_net_profit( DateTimeInterface $after, DateTimeInterface $before ) {
+		$data       = $this->aggregate( $after, $before, true );
+		$revenue    = round( $data['revenue'], 2 );
+		$total_cost = round( array_sum( $data['cost_totals'] ), 2 );
+
+		return round( $revenue - $total_cost, 2 );
+	}
+
+	/**
 	 * The only order query in the engine. `type` is deliberately locked to
 	 * 'shop_order' — WooCommerce stores refunds as their own order-type
 	 * records (type=shop_order_refund) in the same table, and if those
@@ -392,12 +458,27 @@ class ProfitLens_Profit_Engine {
 	 * it sold in the requested period. Variable-parent products aren't
 	 * sellable themselves and are skipped in favor of their variations.
 	 *
+	 * Prefers a bulk SQL count when the active cost source exposes one
+	 * (get_catalog_coverage(), checked via method_exists rather than the
+	 * ProfitLens_Cost_Source interface — it's an optional fast path, not
+	 * every source can offer one; see ProfitLens_Cost_Source_Cogs's version
+	 * for why). Measured difference on a 2,800-product catalog: ~7,200
+	 * queries / ~1.4s (looping wc_get_product() with no persistent object
+	 * cache, the normal state of a fresh REST request) vs. 2 queries / a
+	 * few ms. Falls back to the per-product loop for any cost source that
+	 * doesn't implement the fast path.
+	 *
 	 * @return array{with_cost:int,total:int}
 	 */
 	private function get_catalog_coverage() {
-		$with_cost   = 0;
-		$total       = 0;
 		$cost_source = $this->product_cost->get_cost_source();
+
+		if ( method_exists( $cost_source, 'get_catalog_coverage' ) ) {
+			return $cost_source->get_catalog_coverage();
+		}
+
+		$with_cost = 0;
+		$total     = 0;
 
 		$product_ids = wc_get_products(
 			array(
@@ -462,6 +543,7 @@ class ProfitLens_Profit_Engine {
 				'label'        => $component->get_label(),
 				'amount'       => round( $data['cost_totals'][ $component->get_key() ], 2 ),
 				'is_estimated' => $component->is_estimated(),
+				'note'         => $component->get_note(),
 			);
 		}
 
