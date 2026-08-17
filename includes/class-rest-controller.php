@@ -214,9 +214,19 @@ class ProfitLens_REST_Controller {
 	 * Prior-period comparison: the same number of days immediately
 	 * preceding the current range (e.g. a 7-day range compares against the
 	 * 7 days right before it, not the same week last month). Omits the
-	 * figure entirely — rather than a misleading percentage — when the
-	 * prior period itself made zero or negative profit, since "+400%"
-	 * against a ~$0 or negative base isn't a meaningful comparison.
+	 * figure entirely — rather than a misleading percentage — when:
+	 * - the prior period itself made zero or negative profit ("+400%"
+	 *   against a ~$0 or negative base isn't a meaningful comparison), or
+	 * - the CURRENT period is exactly $0. That one isn't a division
+	 *   concern (the prior period is the divisor, not this one) — it's
+	 *   that a $0 current profit is almost always "no orders this period"
+	 *   (see build_ready_response()'s own no-orders notice), not a
+	 *   genuine break-even result, and computing a real percentage
+	 *   against it (e.g. "-100%" for any positive prior profit) implies a
+	 *   comparison that didn't really happen. Found live: a period with 0
+	 *   orders and a prior period with real profit rendered as
+	 *   "▲ -100% vs prior period" — a negative number under an up arrow,
+	 *   comparing against nothing.
 	 *
 	 * Uses ProfitLens_Profit_Engine::get_net_profit() rather than a second
 	 * full get_summary() — change_pct only ever needs the prior period's
@@ -263,7 +273,7 @@ class ProfitLens_REST_Controller {
 			return null;
 		}
 
-		if ( $prior_profit <= 0.0 ) {
+		if ( $prior_profit <= 0.0 || 0.0 === $current_profit ) {
 			return null;
 		}
 

@@ -70,6 +70,23 @@ class ProfitLens_Assets {
 				// The dev state switcher (Dashboard.jsx) only shows up
 				// when this is true — never on a production site.
 				'isDebug'        => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				// "Today", computed in the site's configured timezone —
+				// the same current_datetime() the REST controller itself
+				// anchors named ranges to (class-rest-controller.php's
+				// get_range_bounds()). The custom date picker uses this,
+				// not the browser's local date, to decide what counts as
+				// "a future date" — a browser in a different timezone than
+				// the site must not get a different validation answer.
+				'siteToday'      => current_datetime()->format( 'Y-m-d' ),
+				// @wordpress/components' DatePicker already renders month/
+				// day names through @wordpress/date's own i18n (localized
+				// automatically wherever 'wp-date' is enqueued — no action
+				// needed here for that part); dateFormat and startOfWeek
+				// are for the parts DatePicker leaves to the caller: how
+				// CustomRangePicker prints the applied range on its own
+				// trigger button, and which day the calendar week starts on.
+				'dateFormat'     => get_option( 'date_format' ),
+				'startOfWeek'    => (int) get_option( 'start_of_week', 0 ),
 			)
 		);
 

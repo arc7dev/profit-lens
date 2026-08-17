@@ -11,23 +11,45 @@ import apiFetch from '@wordpress/api-fetch';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
- * @param {'7d'|'30d'|'month'|'custom'} rangeKey
+ * @param {'7d'|'30d'|'month'|'custom'}          rangeKey
+ * @param {{after: string, before: string}|null} [customRange] Required (and only used) when rangeKey === 'custom' — Y-m-d dates.
  * @return {{isLoading: boolean, data: Object|null, error: Object|null}} Current fetch state for the range.
  */
-export function useSummary( rangeKey ) {
+export function useSummary( rangeKey, customRange = null ) {
 	const [ state, setState ] = useState( {
 		isLoading: true,
 		data: null,
 		error: null,
 	} );
 
+	// 'custom' without a chosen range yet (the picker hasn't been applied)
+	// has nothing to fetch — CustomRangePicker's trigger button covers this
+	// case in the UI; the hook just stays out of an unnecessary/invalid
+	// request rather than asking the endpoint to fall back to 30d behind
+	// the user's back (see class-rest-controller.php's get_range_bounds()
+	// custom-range fallback — that fallback is for a malformed request, not
+	// meant to be relied on from a well-behaved client).
+	const isCustomWithoutRange =
+		'custom' === rangeKey &&
+		! ( customRange?.after && customRange?.before );
+
 	useEffect( () => {
+		if ( isCustomWithoutRange ) {
+			setState( { isLoading: false, data: null, error: null } );
+			return;
+		}
+
 		let isCurrent = true;
 
 		setState( { isLoading: true, data: null, error: null } );
 
+		const query =
+			'custom' === rangeKey
+				? `range=custom&after=${ customRange.after }&before=${ customRange.before }`
+				: `range=${ rangeKey }`;
+
 		apiFetch( {
-			path: `/${ window.profitLensData.restNamespace }/summary?range=${ rangeKey }`,
+			path: `/${ window.profitLensData.restNamespace }/summary?${ query }`,
 		} )
 			.then( ( data ) => {
 				if ( isCurrent ) {
@@ -47,7 +69,13 @@ export function useSummary( rangeKey ) {
 		return () => {
 			isCurrent = false;
 		};
-	}, [ rangeKey ] );
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- customRange is destructured into the two primitives the effect actually depends on, deliberately, so a new-but-equal {after,before} object each render doesn't re-fetch.
+	}, [
+		rangeKey,
+		customRange?.after,
+		customRange?.before,
+		isCustomWithoutRange,
+	] );
 
 	return state;
 }
