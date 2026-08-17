@@ -47,4 +47,11 @@ class ProfitLens_Cost_Component_Refunds implements ProfitLens_Cost_Component {
 	public function is_estimated() {
 		return false;
 	}
+
+	/**
+	 * @return null
+	 */
+	public function get_note() {
+		return null;
+	}
 }

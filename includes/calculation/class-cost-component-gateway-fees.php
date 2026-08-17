@@ -88,4 +88,11 @@ class ProfitLens_Cost_Component_Gateway_Fees implements ProfitLens_Cost_Componen
 	public function is_estimated() {
 		return true;
 	}
+
+	/**
+	 * @return null
+	 */
+	public function get_note() {
+		return null;
+	}
 }

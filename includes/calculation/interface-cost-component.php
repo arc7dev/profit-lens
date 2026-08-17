@@ -52,4 +52,16 @@ interface ProfitLens_Cost_Component {
 	 * @return float
 	 */
 	public function calculate( WC_Order $order );
+
+	/**
+	 * An optional caveat about this component's figure, surfaced verbatim
+	 * in cost_breakdown so the UI doesn't need a separate lookup table to
+	 * know when a number needs a footnote (e.g. Shipping: the amount is
+	 * what was collected from the customer, not the real logistics cost —
+	 * Free has no source for the latter). Null for components with nothing
+	 * to caveat.
+	 *
+	 * @return string|null
+	 */
+	public function get_note();
 }
