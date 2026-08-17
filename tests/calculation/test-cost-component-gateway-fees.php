@@ -51,10 +51,10 @@ class Test_ProfitLens_Cost_Component_Gateway_Fees extends ProfitLens_Calculation
 			array( 'payment_method' => 'paypal' )
 		);
 
-		remove_filter( 'profitlens_gateway_fee_rate', $callback, 10 );
-
 		// 100 * 0.034 + 0.49 = 3.89
 		$this->assertEquals( 3.89, $this->component->calculate( $order ) );
+
+		remove_filter( 'profitlens_gateway_fee_rate', $callback, 10 );
 	}
 
 	/**

@@ -41,13 +41,33 @@ class Test_ProfitLens_Cost_Source_Cogs extends ProfitLens_Calculation_Test_Case 
 	}
 
 	/**
-	 * Case 16: an explicit $0 cost is a real, known value — not the same
-	 * as "no cost data".
+	 * Case 16, as originally designed, doesn't hold: WooCommerce itself
+	 * makes an explicit $0 cost indistinguishable from "no cost set" —
+	 * confirmed against a live install, including bypassing set_cogs_value()
+	 * entirely (writing '_cogs_total_value' via raw SQL and loading a
+	 * product object that had never touched this row before, to rule out
+	 * any caching explanation). WC_Product_Data_Store_CPT::read_product_data()
+	 * loads the stored value through set_props(), which calls the same
+	 * set_cogs_value() → adjust_cogs_value_before_set() that collapses
+	 * `0.0 === $value` to null on the write path — so it collapses on
+	 * *read* too, no matter how the "0" got into the database. There is no
+	 * WooCommerce-supported path that makes get_cogs_value() return 0.0.
+	 *
+	 * ProfitLens_Cost_Source_Cogs::has_defined_cost() still checks for this
+	 * case (own value !== null) — that's correct, harmless, and forward-
+	 * compatible if WooCommerce ever changes this, but it will never
+	 * actually branch that way through get_cogs_value() today. This test
+	 * locks in the discovery instead of asserting a state that cannot be
+	 * constructed.
 	 */
-	public function test_simple_product_with_explicit_zero_cost() {
+	public function test_woocommerce_collapses_explicit_zero_cost_to_null() {
 		$product = $this->create_product( 0.0, 30.0 );
 
-		$this->assertSame( 0.0, $this->source->get_product_cost( $product ) );
+		$this->assertNull(
+			$product->get_cogs_value(),
+			'If this ever starts returning 0.0, ProfitLens_Cost_Source_Cogs can start trusting an explicit $0 cost — until then it cannot.'
+		);
+		$this->assertNull( $this->source->get_product_cost( $product ) );
 	}
 
 	/**
