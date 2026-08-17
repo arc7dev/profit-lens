@@ -161,5 +161,6 @@ class Test_ProfitLens_Cost_Component_Product extends ProfitLens_Calculation_Test
 	public function test_key_label_and_is_estimated() {
 		$this->assertSame( 'product_cost', $this->component->get_key() );
 		$this->assertFalse( $this->component->is_estimated() );
+		$this->assertNull( $this->component->get_note() );
 	}
 }

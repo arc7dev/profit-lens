@@ -196,6 +196,32 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 		$this->assertEquals( 2, $summary['kpis']['revenue']['orders_count'] );
 	}
 
+	/**
+	 * get_net_profit() is a lighter-weight path to the exact same profit
+	 * figure get_summary() computes (built for change_pct's prior-period
+	 * comparison, which never needs the rest of the summary) — it must
+	 * never drift from what get_summary() would have said for the same
+	 * range, including with a refund in play (exercises the same
+	 * cost-component math, not just plain revenue).
+	 */
+	public function test_get_net_profit_matches_get_summary() {
+		$p1 = $this->create_product( 5.0, 20.0 );
+		$p2 = $this->create_product( 8.0, 30.0 );
+
+		$order1  = $this->create_order( array( array( 'product' => $p1, 'qty' => 2, 'total' => 40.0 ) ) );
+		$item_id = array_key_first( $order1->get_items( 'line_item' ) );
+		$this->refund_item( $order1, $item_id, 20.0, 1 );
+
+		$this->create_order( array( array( 'product' => $p2, 'qty' => 1, 'total' => 30.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+
+		$summary = $this->engine->get_summary( $after, $before );
+		$net_profit = $this->engine->get_net_profit( $after, $before );
+
+		$this->assertSame( $summary['kpis']['net_profit']['amount'], $net_profit );
+	}
+
 	public function test_chart_series_fills_gaps_with_zero() {
 		$product = $this->create_product( 5.0, 20.0 );
 		// Only today has an order; the range spans several days.

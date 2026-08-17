@@ -62,6 +62,7 @@ class Test_ProfitLens_Cost_Component_Gateway_Fees extends ProfitLens_Calculation
 	 */
 	public function test_is_always_estimated() {
 		$this->assertTrue( $this->component->is_estimated() );
+		$this->assertNull( $this->component->get_note() );
 	}
 
 	/**

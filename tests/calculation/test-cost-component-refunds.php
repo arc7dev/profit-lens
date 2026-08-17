@@ -85,5 +85,6 @@ class Test_ProfitLens_Cost_Component_Refunds extends ProfitLens_Calculation_Test
 		$this->assertSame( 'refunds', $this->component->get_key() );
 		$this->assertSame( 'Refunds', $this->component->get_label() );
 		$this->assertFalse( $this->component->is_estimated() );
+		$this->assertNull( $this->component->get_note() );
 	}
 }
