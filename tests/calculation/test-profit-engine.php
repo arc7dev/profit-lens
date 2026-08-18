@@ -163,6 +163,60 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 		$this->assertEquals( 30.0, $coverage['revenue_uncovered'] );
 	}
 
+	/**
+	 * Per-product has_cost flag (feeds ProductTable's "No cost set" chip):
+	 * true for a product whose cost is defined, false for one that isn't —
+	 * checked on the same two products/order as the revenue-coverage test
+	 * above, but reading products instead of cost_coverage.
+	 */
+	public function test_product_has_cost_reflects_whether_its_own_cost_is_known() {
+		$with_cost    = $this->create_product( 5.0, 20.0 );
+		$without_cost = $this->create_product( null, 30.0 );
+
+		$this->create_order(
+			array(
+				array( 'product' => $with_cost, 'qty' => 1, 'total' => 20.0 ),
+				array( 'product' => $without_cost, 'qty' => 1, 'total' => 30.0 ),
+			)
+		);
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		$by_id = array();
+		foreach ( $products as $product ) {
+			$by_id[ $product['id'] ] = $product;
+		}
+
+		$this->assertTrue( $by_id[ $with_cost->get_id() ]['has_cost'] );
+		$this->assertFalse( $by_id[ $without_cost->get_id() ]['has_cost'] );
+	}
+
+	/**
+	 * A product sold across two orders where only one line's cost was
+	 * unknown (e.g. the cost was set partway through the period) must
+	 * still flip has_cost to false for the whole row — a mix of real cost
+	 * and an implicit $0 for the uncovered units is exactly the case the
+	 * chip exists to flag, not just "cost never set at all".
+	 */
+	public function test_product_has_cost_false_when_only_some_of_its_lines_are_uncovered() {
+		$product = $this->create_product( 5.0, 20.0 );
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		// Simulate the cost having been unset after the first sale: strip
+		// it directly rather than via a second product, so both order
+		// lines point at the exact same product_id.
+		$product->set_cogs_value( null );
+		$product->save();
+
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		$this->assertFalse( $products[0]['has_cost'] );
+	}
+
 	// -----------------------------------------------------------------
 	// Case 25/26: zero-price product doesn't divide by zero.
 	// -----------------------------------------------------------------

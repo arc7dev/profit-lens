@@ -4,11 +4,14 @@
  *
  * Calls ProfitLens_Profit_Engine for every field — no mock data. The
  * response contract is the same one the mock scaffold shipped (see the
- * plugin's REST contract notes), with one deliberate addition: each
+ * plugin's REST contract notes), with two deliberate additions: each
  * cost_breakdown entry now carries a `note` field (see
  * ProfitLens_Cost_Component::get_note()) so the UI can surface a caveat
  * like shipping's "this is what was collected, not the real logistics
- * cost" without a separate request.
+ * cost" without a separate request; and each `products` entry now carries
+ * a `has_cost` boolean (false when any of that product's sales in the
+ * period had no known unit cost) so ProductTable can show a "No cost set"
+ * chip instead of a profit figure that looks trustworthy but isn't.
  *
  * QA override without URL parameters (debug querystring params tend to
  * survive into production): use the `profitlens_demo_status` /

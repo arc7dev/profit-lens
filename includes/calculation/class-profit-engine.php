@@ -144,7 +144,7 @@ class ProfitLens_Profit_Engine {
 	 * @param int               $product_id
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
-	 * @return array{product_id:int,name:string,units:int,revenue:float,cost:float,profit:float,margin_pct:float}|null
+	 * @return array{product_id:int,name:string,units:int,revenue:float,cost:float,profit:float,margin_pct:float,has_cost:bool}|null
 	 */
 	public function calculate_product_profit( $product_id, DateTimeInterface $after, DateTimeInterface $before ) {
 		$data = $this->aggregate( $after, $before );
@@ -163,6 +163,7 @@ class ProfitLens_Profit_Engine {
 			'cost'       => round( $product['cost'], 2 ),
 			'profit'     => round( $product['profit'], 2 ),
 			'margin_pct' => round( $product['margin_pct'], 1 ),
+			'has_cost'   => $product['has_cost'],
 		);
 	}
 
@@ -357,11 +358,22 @@ class ProfitLens_Profit_Engine {
 
 				if ( ! isset( $products[ $product_id ] ) ) {
 					$products[ $product_id ] = array(
-						'id'      => $product_id,
-						'name'    => $line['product']->get_name(),
-						'units'   => 0.0,
-						'revenue' => 0.0,
-						'cost'    => 0.0,
+						'id'       => $product_id,
+						'name'     => $line['product']->get_name(),
+						'units'    => 0.0,
+						'revenue'  => 0.0,
+						'cost'     => 0.0,
+						// True only once every line sold for this product in
+						// the period had a known unit cost. A product whose
+						// cost was unset for even part of its sales still
+						// gets this flipped false — its cost/profit figures
+						// below are a mix of real cost and an implicit $0
+						// for the uncovered units, which is exactly the
+						// "may be overstated" case the UI has to flag on
+						// this row (ProductTable's "No cost set" chip)
+						// rather than show a profit number that looks
+						// trustworthy but isn't.
+						'has_cost' => true,
 					);
 				}
 
@@ -373,6 +385,7 @@ class ProfitLens_Profit_Engine {
 					$revenue_covered += $line['net_revenue'];
 				} else {
 					$revenue_uncovered += $line['net_revenue'];
+					$products[ $product_id ]['has_cost'] = false;
 				}
 			}
 		}
@@ -650,6 +663,7 @@ class ProfitLens_Profit_Engine {
 				'cost'       => round( $product['cost'], 2 ),
 				'profit'     => round( $product['profit'], 2 ),
 				'margin_pct' => round( $product['margin_pct'], 1 ),
+				'has_cost'   => $product['has_cost'],
 			);
 		}
 

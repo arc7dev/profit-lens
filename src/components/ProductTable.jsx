@@ -1,4 +1,6 @@
-import { useState } from '@wordpress/element';
+import { useMemo, useState } from '@wordpress/element';
+
+import { formatCurrency } from '../utils/currency';
 
 const COLUMNS = [
 	{ key: 'name', label: 'Product', align: 'left' },
@@ -9,7 +11,13 @@ const COLUMNS = [
 	{ key: 'margin_pct', label: 'Margin %', align: 'right' },
 ];
 
+const PAGE_SIZE = 25;
+
 function marginClass( row ) {
+	if ( ! row.has_cost ) {
+		return '';
+	}
+
 	if ( row.profit < 0 ) {
 		return 'pl-table__margin--loss';
 	}
@@ -42,7 +50,28 @@ function SortIcon( { active, dir } ) {
 }
 
 /**
- * "Profit by Product" table: sortable by column, with a totals row.
+ * "Profit by Product" table: search + sortable by column (over the full
+ * result set, not just the visible page) + client-side pagination.
+ *
+ * Client-side, deliberately, not server-side: the REST endpoint already
+ * computes every product's figures in one pass over the period's orders
+ * (ProfitLens_Profit_Engine::aggregate() — see its docblock) regardless of
+ * how many rows the UI will ever show, so paginating server-side would
+ * only shrink the JSON payload, not the calculation cost, at the price of
+ * a request per page/sort/search change and a parallel PHP implementation
+ * of exactly the search+sort logic below. At the catalog sizes this
+ * product actually targets (a few hundred to a few thousand products for
+ * the Small-tier store this plugin is built for — see CLAUDE.md), that
+ * payload is at most a few hundred KB of JSON, which is cheap to hold in
+ * memory and slice/sort/filter instantly in the browser. It also comes
+ * for free with the one requirement server-side pagination would have
+ * fought: sorting by a column has to reorder the ENTIRE 313-product set,
+ * not just whichever 20-25 rows happen to be on screen — with the full
+ * array already in hand, that's just Array.prototype.sort() over
+ * `products`, no extra request. Revisit if a store's catalog ever grows
+ * large enough that the payload itself becomes the bottleneck — that's a
+ * different problem (shrinking the response) from the one pagination here
+ * solves (not rendering 313 <tr>s at once).
  *
  * @param {Object}                                                                    props
  * @param {Array}                                                                     props.products
@@ -52,6 +81,8 @@ function SortIcon( { active, dir } ) {
 export default function ProductTable( { products, totals, rangeLabel } ) {
 	const [ sortKey, setSortKey ] = useState( 'profit' );
 	const [ sortDir, setSortDir ] = useState( 'desc' );
+	const [ search, setSearch ] = useState( '' );
+	const [ page, setPage ] = useState( 0 );
 
 	function handleSort( key ) {
 		if ( key === sortKey ) {
@@ -60,26 +91,65 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 			setSortKey( key );
 			setSortDir( 'desc' );
 		}
+		setPage( 0 );
 	}
 
-	const sorted = [ ...products ].sort( ( a, b ) => {
-		const av = a[ sortKey ];
-		const bv = b[ sortKey ];
+	function handleSearchChange( value ) {
+		setSearch( value );
+		setPage( 0 );
+	}
 
-		if ( typeof av === 'string' ) {
-			return sortDir === 'asc'
-				? av.localeCompare( bv )
-				: bv.localeCompare( av );
+	const filtered = useMemo( () => {
+		const query = search.trim().toLowerCase();
+
+		if ( ! query ) {
+			return products;
 		}
 
-		return sortDir === 'asc' ? av - bv : bv - av;
-	} );
+		return products.filter( ( row ) =>
+			row.name.toLowerCase().includes( query )
+		);
+	}, [ products, search ] );
+
+	// Sorted over the full filtered set, before pagination slices it — a
+	// "lowest profit" sort has to surface the single worst performer out of
+	// all 313 products, not just whichever page was already on screen.
+	const sorted = useMemo( () => {
+		return [ ...filtered ].sort( ( a, b ) => {
+			const av = a[ sortKey ];
+			const bv = b[ sortKey ];
+
+			if ( typeof av === 'string' ) {
+				return sortDir === 'asc'
+					? av.localeCompare( bv )
+					: bv.localeCompare( av );
+			}
+
+			return sortDir === 'asc' ? av - bv : bv - av;
+		} );
+	}, [ filtered, sortKey, sortDir ] );
+
+	const pageCount = Math.max( 1, Math.ceil( sorted.length / PAGE_SIZE ) );
+	const currentPage = Math.min( page, pageCount - 1 );
+	const start = currentPage * PAGE_SIZE;
+	const paged = sorted.slice( start, start + PAGE_SIZE );
+	const rangeStart = sorted.length === 0 ? 0 : start + 1;
+	const rangeEnd = Math.min( start + PAGE_SIZE, sorted.length );
 
 	return (
 		<div className="pl-card pl-table-card">
 			<div className="pl-table-card__header">
 				<div className="pl-table-card__title">Profit by Product</div>
 				<div className="pl-table-card__actions">
+					<input
+						type="search"
+						className="pl-table-card__search pl-mono"
+						placeholder="Search products…"
+						value={ search }
+						onChange={ ( e ) =>
+							handleSearchChange( e.target.value )
+						}
+					/>
 					<button
 						type="button"
 						className="pl-table-card__export pl-mono"
@@ -87,7 +157,8 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 						Export CSV
 					</button>
 					<div className="pl-table-card__count pl-mono">
-						{ products.length } products · { rangeLabel }
+						Showing { rangeStart }–{ rangeEnd } of { sorted.length }{ ' ' }
+						products · { rangeLabel }
 					</div>
 				</div>
 			</div>
@@ -116,8 +187,20 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 						</tr>
 					</thead>
 					<tbody>
-						{ sorted.map( ( row ) => {
-							const isLoss = row.profit < 0;
+						{ paged.length === 0 && (
+							<tr>
+								<td
+									className="pl-table__empty"
+									colSpan={ COLUMNS.length }
+								>
+									No products match &ldquo;{ search }
+									&rdquo;.
+								</td>
+							</tr>
+						) }
+
+						{ paged.map( ( row ) => {
+							const isLoss = row.has_cost && row.profit < 0;
 
 							return (
 								<tr key={ row.id }>
@@ -125,23 +208,33 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 										{ row.name }
 									</td>
 									<td>{ row.units }</td>
-									<td>${ row.revenue.toLocaleString() }</td>
-									<td>${ row.cost.toLocaleString() }</td>
-									<td
-										className={
-											isLoss
-												? 'pl-table__profit--loss'
-												: 'pl-table__profit--profit'
-										}
-									>
-										{ isLoss
-											? `−$${ Math.abs(
-													row.profit
-											  ).toLocaleString() }`
-											: `$${ row.profit.toLocaleString() }` }
+									<td>
+										{ formatCurrency( row.revenue, 2 ) }
 									</td>
+									<td>{ formatCurrency( row.cost, 2 ) }</td>
+									{ row.has_cost ? (
+										<td
+											className={
+												isLoss
+													? 'pl-table__profit--loss'
+													: 'pl-table__profit--profit'
+											}
+										>
+											{ formatCurrency( row.profit, 2 ) }
+										</td>
+									) : (
+										<td>
+											<span className="pl-table__chip pl-mono">
+												No cost set
+											</span>
+										</td>
+									) }
 									<td className={ marginClass( row ) }>
-										{ row.margin_pct.toFixed( 1 ) }%
+										{ row.has_cost
+											? `${ row.margin_pct.toFixed(
+													1
+											  ) }%`
+											: '—' }
 									</td>
 								</tr>
 							);
@@ -154,16 +247,40 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 								</span>
 							</td>
 							<td>{ totals.units }</td>
-							<td>${ totals.revenue.toLocaleString() }</td>
-							<td>${ totals.cost.toLocaleString() }</td>
+							<td>{ formatCurrency( totals.revenue, 2 ) }</td>
+							<td>{ formatCurrency( totals.cost, 2 ) }</td>
 							<td className="pl-table__profit--profit">
-								${ totals.profit.toLocaleString() }
+								{ formatCurrency( totals.profit, 2 ) }
 							</td>
 							<td>{ totals.margin_pct.toFixed( 1 ) }%</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
+
+			{ pageCount > 1 && (
+				<div className="pl-table-card__pagination">
+					<button
+						type="button"
+						className="pl-table-card__page-btn pl-mono"
+						disabled={ currentPage === 0 }
+						onClick={ () => setPage( currentPage - 1 ) }
+					>
+						← Previous
+					</button>
+					<span className="pl-table-card__page-indicator pl-mono">
+						Page { currentPage + 1 } of { pageCount }
+					</span>
+					<button
+						type="button"
+						className="pl-table-card__page-btn pl-mono"
+						disabled={ currentPage >= pageCount - 1 }
+						onClick={ () => setPage( currentPage + 1 ) }
+					>
+						Next →
+					</button>
+				</div>
+			) }
 		</div>
 	);
 }

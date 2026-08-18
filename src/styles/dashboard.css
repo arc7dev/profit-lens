@@ -179,11 +179,15 @@
 
 /* ── Cost coverage notice ─────────────────────────────────────────────── */
 
+/* Three severity tiers below "fully covered" (which renders nothing) —
+ * moderate/low/critical escalate border weight, background saturation,
+ * and font weight together, in that order, so the same copy reads as a
+ * nudge at 92% coverage and as something you can't skim past at 35%. */
+
 .pl-coverage {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
+	gap: 10px;
 	padding: 9px 14px;
 	margin-bottom: 12px;
 	background: var(--pl-color-border-soft);
@@ -199,9 +203,46 @@
 	background: rgba(192, 57, 43, 0.06);
 }
 
+.pl-coverage--critical {
+	border-left-width: 4px;
+	border-left-color: var(--pl-color-loss);
+	background: rgba(192, 57, 43, 0.1);
+	padding: 11px 16px;
+	font-weight: 500;
+}
+
+.pl-coverage__icon {
+	color: var(--pl-color-loss);
+	font-size: 15px;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.pl-coverage__text {
+	flex: 1;
+}
+
 .pl-coverage__figure {
 	font-family: var(--pl-font-mono);
 	font-weight: 500;
+}
+
+.pl-coverage--critical .pl-coverage__figure {
+	font-weight: 700;
+}
+
+.pl-coverage__link {
+	font-family: var(--pl-font-mono);
+	font-size: 11px;
+	color: var(--pl-color-muted);
+	text-decoration: none;
+	white-space: nowrap;
+	border-bottom: 1px solid #b0c4ce;
+	flex-shrink: 0;
+}
+
+.pl-coverage__link:hover {
+	color: var(--pl-color-text);
 }
 
 /* ── Insight bar ───────────────────────────────────────────────────────── */
@@ -392,6 +433,21 @@
 	gap: 20px;
 }
 
+.pl-table-card__search {
+	width: 180px;
+	padding: 6px 10px;
+	font-size: 12px;
+	color: var(--pl-color-text);
+	background: var(--pl-color-bg);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+}
+
+.pl-table-card__search:focus-visible {
+	outline: 2px solid var(--pl-color-accent);
+	outline-offset: -1px;
+}
+
 .pl-table-card__export {
 	font-family: var(--pl-font-mono);
 	font-size: 11px;
@@ -521,6 +577,64 @@
 	font-size: 13px;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
+	color: var(--pl-color-muted);
+}
+
+/* "No cost set" — replaces a profit/margin figure that would otherwise
+ * look trustworthy while actually being gross revenue with an implicit
+ * $0 cost. Neutral, not alarm-colored: a missing cost is missing data,
+ * not a loss (see CLAUDE.md — costs never get alarm colors either). */
+.pl-table__chip {
+	display: inline-block;
+	padding: 2px 8px;
+	font-size: 10px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: var(--pl-color-muted);
+	background: var(--pl-color-border-soft);
+	border: 1px solid var(--pl-color-border);
+	border-radius: 10px;
+	white-space: nowrap;
+}
+
+.pl-table__empty {
+	padding: 32px 14px;
+	text-align: center;
+	font-family: var(--pl-font-sans);
+	color: var(--pl-color-muted);
+}
+
+.pl-table-card__pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	padding: 14px;
+	border-top: 1px solid var(--pl-color-border);
+}
+
+.pl-table-card__page-btn {
+	padding: 6px 12px;
+	font-size: 11px;
+	color: var(--pl-color-text);
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+	cursor: pointer;
+}
+
+.pl-table-card__page-btn:disabled {
+	color: var(--pl-color-muted);
+	opacity: 0.4;
+	cursor: default;
+}
+
+.pl-table-card__page-btn:hover:not(:disabled) {
+	background: var(--pl-color-border-soft);
+}
+
+.pl-table-card__page-indicator {
+	font-size: 11px;
 	color: var(--pl-color-muted);
 }
 
