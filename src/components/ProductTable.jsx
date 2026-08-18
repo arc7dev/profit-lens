@@ -1,4 +1,4 @@
-import { useMemo, useState } from '@wordpress/element';
+import { useMemo, useRef, useState } from '@wordpress/element';
 
 import { formatCurrency } from '../utils/currency';
 
@@ -162,6 +162,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 	const [ sortDir, setSortDir ] = useState( 'desc' );
 	const [ search, setSearch ] = useState( '' );
 	const [ page, setPage ] = useState( 0 );
+	const searchInputRef = useRef( null );
 
 	function handleSort( key ) {
 		if ( key === sortKey ) {
@@ -176,6 +177,15 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 	function handleSearchChange( value ) {
 		setSearch( value );
 		setPage( 0 );
+	}
+
+	function handleClearSearch() {
+		handleSearchChange( '' );
+		// Standard "clear search" UX — leaves focus where the user's
+		// attention already is instead of dropping it back to the top of
+		// the page (the button disappears the instant this runs, so
+		// without this the browser would fall back to <body>).
+		searchInputRef.current?.focus();
 	}
 
 	const filtered = useMemo( () => {
@@ -219,16 +229,62 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 		<div className="pl-card pl-table-card">
 			<div className="pl-table-card__header">
 				<div className="pl-table-card__title">Profit by Product</div>
-				<div className="pl-table-card__actions">
+
+				{ /* A separate flex child from .pl-table-card__actions, not
+				 * nested inside it — that's what lets it float in the
+				 * middle and absorb space up to its own max-width instead
+				 * of being squeezed against Export CSV/the count on the
+				 * right (see .pl-table-card__header's justify-content:
+				 * space-between in dashboard.css, which is what turns the
+				 * leftover room into blank space on both sides of this
+				 * box rather than trailing space at the end of the row). */ }
+				<div className="pl-table-card__search-wrap">
+					<svg
+						className="pl-table-card__search-icon"
+						width="13"
+						height="13"
+						viewBox="0 0 13 13"
+						fill="none"
+						aria-hidden="true"
+					>
+						<circle
+							cx="5.5"
+							cy="5.5"
+							r="4.5"
+							stroke="currentColor"
+							strokeWidth="1.3"
+						/>
+						<path
+							d="M8.8 8.8L12 12"
+							stroke="currentColor"
+							strokeWidth="1.3"
+							strokeLinecap="round"
+						/>
+					</svg>
 					<input
+						ref={ searchInputRef }
 						type="search"
 						className="pl-table-card__search pl-mono"
 						placeholder="Search products…"
+						aria-label="Search products"
 						value={ search }
 						onChange={ ( e ) =>
 							handleSearchChange( e.target.value )
 						}
 					/>
+					{ search && (
+						<button
+							type="button"
+							className="pl-table-card__search-clear"
+							aria-label="Clear search"
+							onClick={ handleClearSearch }
+						>
+							×
+						</button>
+					) }
+				</div>
+
+				<div className="pl-table-card__actions">
 					<button
 						type="button"
 						className="pl-table-card__export pl-mono"
