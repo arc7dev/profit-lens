@@ -476,6 +476,31 @@
 	overflow-x: auto;
 }
 
+/* Deliberately the browser DEFAULT table-layout (auto), not `fixed` —
+ * this went through two other approaches first, both wrong for
+ * different reasons, worth recording so nobody re-tries them:
+ *
+ * 1. table-layout: fixed + name column unset (meant to absorb leftover
+ *    space): fixed layout ignores box-model properties like max-width
+ *    on a cell entirely once column widths are set from the colgroup —
+ *    a clamped cell's actual text rendered narrower than its column,
+ *    leaving a dead gap before the next column on wide viewports.
+ * 2. table-layout: fixed + every column (incl. name) given a literal
+ *    pixel width, table width set to their sum via an inline style:
+ *    fixed the gap, but the table stopped growing with its container —
+ *    a real, wide admin viewport was left with the table sitting at
+ *    its minimum width and a dead STRIP of empty card to its right,
+ *    since nothing was left flexible to absorb the extra room.
+ *
+ * table-layout: fixed's actual purpose — skip measuring cell content
+ * before laying out columns — doesn't even apply here: ProductTable
+ * paginates to 25 DOM rows at a time, not however many thousand
+ * products matched, so there's no large-table layout cost to avoid in
+ * the first place. Auto layout treats each numeric <col>'s width as a
+ * real per-column hint while still leaving width: 100% on the flexible
+ * name cell (.pl-table__cell--name below) free to claim the remainder —
+ * two properties actually cooperating, rather than one working around
+ * the other. */
 .pl-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -527,12 +552,124 @@
 	text-align: right;
 	border-bottom: 1px solid var(--pl-color-border-soft);
 	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	/* Keeps digits the same width regardless of which ones appear, so a
+	 * column of dollar amounts lines up vertically for an at-a-glance
+	 * comparison instead of "1" and "8" shifting the decimal point
+	 * sideways row to row. */
+	font-variant-numeric: tabular-nums;
 }
 
 .pl-table td.pl-table__col--label {
 	text-align: left;
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
+}
+
+/* The product name column: the one column allowed to wrap, specifically
+ * to a 2-line clamp rather than single-line ellipsis. This catalog's
+ * products distinguish themselves by SUFFIX ("... - 3/4" Premium 4 Flute
+ * End Mill" vs "... - 1/2" (0.5000) x 3" LOC") — an end-truncated single
+ * line would make genuinely different products read as identical rows.
+ *
+ * width: 100% is what actually makes this column elastic under table-
+ * layout: auto — it claims whatever's left in the table after the five
+ * numeric <col> widths are satisfied (see ProductTable.jsx's COLUMNS and
+ * the .pl-table comment above for why auto layout + this combination,
+ * not fixed layout, is what gets a flexible column at all). min-width is
+ * the floor before .pl-table-wrap's own horizontal scrollbar (and the
+ * sticky name/profit columns) take over on a narrow admin viewport.
+ *
+ * The clamp lives on an INNER <span> (.pl-table__name-text), not the
+ * <td> itself — tried it directly on the <td> first (overriding its
+ * default display: table-cell to -webkit-box, which -webkit-line-clamp
+ * requires) and the row's rendered height stopped reliably respecting
+ * the 2-line clamp: a 3rd, uncapped line of text was visibly rendering
+ * past where overflow: hidden should have cut it off, because a table
+ * cell no longer participating in the table's own row-height algorithm
+ * as display: table-cell doesn't reliably get its height constrained by
+ * a display: -webkit-box override the same way a normal block/flex
+ * container would. Letting the <td> stay a normal table cell and doing
+ * the box/clamp/overflow entirely on a plain inner element is the
+ * standard, more robust way to clamp text inside a table.
+ *
+ * white-space: normal lives on the SPAN, not the <td>, and has to be
+ * set there explicitly rather than relying on inheritance: `.pl-table
+ * td` sets white-space: nowrap at specificity (0,1,1), which a bare
+ * `.pl-table__cell--name { white-space: normal }` on the <td> itself
+ * can't outrank regardless of source order — but a declaration that
+ * matches the SPAN directly always wins over a value merely inherited
+ * from its ancestor, no specificity contest involved, so setting it
+ * here sidesteps that fight entirely instead of re-fighting it. */
+.pl-table__cell--name {
+	width: 100%;
+	min-width: 200px;
+}
+
+.pl-table__name-text {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	white-space: normal;
+	line-height: 1.35;
+}
+
+/* Sticky columns: the fallback for whatever horizontal scroll survives
+ * the fixed-width numeric columns + name's own min-width on a narrow
+ * admin viewport (WP's own sidebar menu alone eats ~160-190px). Name
+ * stays pinned left (always know which row
+ * you're on), Net Profit stays pinned right (the number the table
+ * exists to answer) — only Units/Revenue/Cost/Margin scroll underneath.
+ * Each needs an EXPLICIT opaque background: a sticky cell with no
+ * background of its own lets the scrolling columns show through as they
+ * pass behind it, which looks like a rendering bug. The three states
+ * below (default/striped/hover) have to be repeated here because the
+ * <tr>'s own background does not reliably paint through a sticky child
+ * cell across browsers. */
+.pl-table__col--sticky-left,
+.pl-table__col--sticky-right {
+	position: sticky;
+	z-index: 1;
+	background: var(--pl-color-surface);
+}
+
+.pl-table__col--sticky-left {
+	left: 0;
+	box-shadow: 2px 0 4px rgba(18, 33, 46, 0.05);
+}
+
+.pl-table__col--sticky-right {
+	right: 0;
+	box-shadow: -2px 0 4px rgba(18, 33, 46, 0.05);
+}
+
+.pl-table thead .pl-table__col--sticky-left,
+.pl-table thead .pl-table__col--sticky-right {
+	z-index: 2;
+	background: var(--pl-color-surface);
+}
+
+.pl-table tbody tr:nth-child(even) .pl-table__col--sticky-left,
+.pl-table tbody tr:nth-child(even) .pl-table__col--sticky-right {
+	background: #fafbfc;
+}
+
+.pl-table tbody tr:hover .pl-table__col--sticky-left,
+.pl-table tbody tr:hover .pl-table__col--sticky-right {
+	background: #f0f7ff;
+}
+
+/* Same specificity "shape" as the nth-child rule above (one class, two
+ * type selectors, one pseudo-class-or-class each) on purpose — ties are
+ * broken by source order, and the totals row's own background has to
+ * win over "is this row even-numbered" regardless of how many products
+ * are on the current page. */
+.pl-table tbody tr.pl-table__totals .pl-table__col--sticky-left,
+.pl-table tbody tr.pl-table__totals .pl-table__col--sticky-right {
+	background: #fafbfc;
 }
 
 .pl-table tbody tr:nth-child(even) {

@@ -2,14 +2,73 @@ import { useMemo, useState } from '@wordpress/element';
 
 import { formatCurrency } from '../utils/currency';
 
+// Fixed pixel widths for the five NUMERIC columns only — name is
+// deliberately left unset here and instead gets `width: 100%` in CSS
+// (.pl-table__cell--name), absorbing whatever's left after these five.
+// table-layout stays the browser default (auto), not `fixed`: fixed
+// layout ignores content/hints entirely and only obeys <col> widths as
+// absolute, which is exactly what broke this the first time round — a
+// flexible column has no way to actually receive "the rest of the
+// table" under fixed layout without a matching, hand-kept-in-sync
+// number on the <table> element itself (tried it: works, but leaves a
+// dead gap on any viewport wider than that number, since the table
+// stops growing with its container). Auto layout uses <col> widths as
+// real per-column hints while still letting width: 100% on the flexible
+// cell take the remainder — the two other properties actually working
+// together here, rather than one substituting for the other.
+//
+// Each numeric width below is sized off REAL measured worst cases
+// (wp-cli against the seeded catalog's full history, then measured in
+// the browser in the exact production font — see the PR discussion),
+// not guessed: a single product's own figures top out around $24.5K/
+// -$6.9K, but an ALL-TIME totals row (a real, reachable custom range,
+// not a hypothetical) reaches $545,522.12 revenue / −$257,716.71 profit
+// — the totals row has to fit too, not just individual product rows.
+// Net Profit also has to fit the "No cost set" chip (measured ~116px
+// with padding), which turned out wider than any currency figure a
+// single product row will ever show in that column.
 const COLUMNS = [
-	{ key: 'name', label: 'Product', align: 'left' },
-	{ key: 'units', label: 'Units', align: 'right' },
-	{ key: 'revenue', label: 'Revenue', align: 'right' },
-	{ key: 'cost', label: 'Cost', align: 'right' },
-	{ key: 'profit', label: 'Net Profit', align: 'right' },
-	{ key: 'margin_pct', label: 'Margin %', align: 'right' },
+	{ key: 'name', label: 'Product', align: 'left', sticky: 'left' },
+	{ key: 'units', label: 'Units', align: 'right', width: 72 },
+	{ key: 'revenue', label: 'Revenue', align: 'right', width: 118 },
+	{ key: 'cost', label: 'Cost', align: 'right', width: 118 },
+	{
+		key: 'profit',
+		label: 'Net Profit',
+		align: 'right',
+		width: 130,
+		sticky: 'right',
+	},
+	{ key: 'margin_pct', label: 'Margin %', align: 'right', width: 96 },
 ];
+
+/**
+ * @param {{align:string, sticky?: 'left'|'right'}} col
+ * @return {string} Class names for a <th> in this column (used by the
+ *                   generic header row below — body rows aren't generated
+ *                   from COLUMNS, so they use the constants underneath
+ *                   this function directly instead).
+ */
+function columnClass( col ) {
+	const classes = [];
+
+	if ( col.align === 'left' ) {
+		classes.push( 'pl-table__col--label' );
+	}
+
+	if ( col.sticky ) {
+		classes.push( `pl-table__col--sticky-${ col.sticky }` );
+	}
+
+	return classes.join( ' ' );
+}
+
+// Body rows are written by hand per field (not mapped from COLUMNS), so
+// the two sticky columns' classes are named directly here rather than
+// looked up by array index into COLUMNS.
+const NAME_CELL_CLASS =
+	'pl-table__col--label pl-table__cell--name pl-table__col--sticky-left';
+const PROFIT_CELL_STICKY_CLASS = 'pl-table__col--sticky-right';
 
 const PAGE_SIZE = 25;
 
@@ -185,16 +244,20 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 
 			<div className="pl-table-wrap">
 				<table className="pl-table">
+					<colgroup>
+						{ COLUMNS.map( ( col ) => (
+							<col
+								key={ col.key }
+								style={ { width: col.width } }
+							/>
+						) ) }
+					</colgroup>
 					<thead>
 						<tr>
 							{ COLUMNS.map( ( col ) => (
 								<th
 									key={ col.key }
-									className={
-										col.align === 'left'
-											? 'pl-table__col--label'
-											: ''
-									}
+									className={ columnClass( col ) }
 									onClick={ () => handleSort( col.key ) }
 								>
 									{ col.label }
@@ -224,8 +287,13 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 
 							return (
 								<tr key={ row.id }>
-									<td className="pl-table__col--label">
-										{ row.name }
+									<td className={ NAME_CELL_CLASS }>
+										<div
+											className="pl-table__name-text"
+											title={ row.name }
+										>
+											{ row.name }
+										</div>
 									</td>
 									<td>{ row.units }</td>
 									<td>
@@ -234,16 +302,20 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 									<td>{ formatCurrency( row.cost, 2 ) }</td>
 									{ row.has_cost ? (
 										<td
-											className={
+											className={ `${ PROFIT_CELL_STICKY_CLASS } ${
 												isLoss
 													? 'pl-table__profit--loss'
 													: 'pl-table__profit--profit'
-											}
+											}` }
 										>
 											{ formatCurrency( row.profit, 2 ) }
 										</td>
 									) : (
-										<td>
+										<td
+											className={
+												PROFIT_CELL_STICKY_CLASS
+											}
+										>
 											<span className="pl-table__chip pl-mono">
 												No cost set
 											</span>
@@ -261,7 +333,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 						} ) }
 
 						<tr className="pl-table__totals">
-							<td className="pl-table__col--label">
+							<td className={ NAME_CELL_CLASS }>
 								<span className="pl-table__totals-label">
 									Total
 								</span>
@@ -269,7 +341,9 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 							<td>{ totals.units }</td>
 							<td>{ formatCurrency( totals.revenue, 2 ) }</td>
 							<td>{ formatCurrency( totals.cost, 2 ) }</td>
-							<td className="pl-table__profit--profit">
+							<td
+								className={ `${ PROFIT_CELL_STICKY_CLASS } pl-table__profit--profit` }
+							>
 								{ formatCurrency( totals.profit, 2 ) }
 							</td>
 							<td>{ totals.margin_pct.toFixed( 1 ) }%</td>
