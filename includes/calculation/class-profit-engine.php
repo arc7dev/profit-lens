@@ -144,7 +144,7 @@ class ProfitLens_Profit_Engine {
 	 * @param int               $product_id
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
-	 * @return array{product_id:int,name:string,units:int,revenue:float,cost:float,profit:float,margin_pct:float,has_cost:bool}|null
+	 * @return array{product_id:int,name:string,units:int,revenue:float,cost:float,profit:float,margin_pct:float,has_cost:bool,revenue_covered_pct:float}|null
 	 */
 	public function calculate_product_profit( $product_id, DateTimeInterface $after, DateTimeInterface $before ) {
 		$data = $this->aggregate( $after, $before );
@@ -156,14 +156,15 @@ class ProfitLens_Profit_Engine {
 		$product = $data['products'][ $product_id ];
 
 		return array(
-			'product_id' => $product_id,
-			'name'       => $product['name'],
-			'units'      => (int) round( $product['units'] ),
-			'revenue'    => round( $product['revenue'], 2 ),
-			'cost'       => round( $product['cost'], 2 ),
-			'profit'     => round( $product['profit'], 2 ),
-			'margin_pct' => round( $product['margin_pct'], 1 ),
-			'has_cost'   => $product['has_cost'],
+			'product_id'          => $product_id,
+			'name'                => $product['name'],
+			'units'               => (int) round( $product['units'] ),
+			'revenue'             => round( $product['revenue'], 2 ),
+			'cost'                => round( $product['cost'], 2 ),
+			'profit'              => round( $product['profit'], 2 ),
+			'margin_pct'          => round( $product['margin_pct'], 1 ),
+			'has_cost'            => $product['has_cost'],
+			'revenue_covered_pct' => round( $product['revenue_covered_pct'], 1 ),
 		);
 	}
 
@@ -358,22 +359,26 @@ class ProfitLens_Profit_Engine {
 
 				if ( ! isset( $products[ $product_id ] ) ) {
 					$products[ $product_id ] = array(
-						'id'       => $product_id,
-						'name'     => $line['product']->get_name(),
-						'units'    => 0.0,
-						'revenue'  => 0.0,
-						'cost'     => 0.0,
-						// True only once every line sold for this product in
-						// the period had a known unit cost. A product whose
-						// cost was unset for even part of its sales still
-						// gets this flipped false — its cost/profit figures
-						// below are a mix of real cost and an implicit $0
-						// for the uncovered units, which is exactly the
-						// "may be overstated" case the UI has to flag on
-						// this row (ProductTable's "No cost set" chip)
-						// rather than show a profit number that looks
-						// trustworthy but isn't.
-						'has_cost' => true,
+						'id'                => $product_id,
+						'name'              => $line['product']->get_name(),
+						'units'             => 0.0,
+						'revenue'           => 0.0,
+						'cost'              => 0.0,
+						// Split the same way the period-level revenue_covered/
+						// revenue_uncovered totals above are — this product's
+						// own share of each, so per-product coverage can be a
+						// real percentage instead of the all-or-nothing
+						// has_cost boolean below. A product with cost known
+						// for 9 of its 10 sales this period should not read
+						// the same as one with no cost anywhere: its
+						// cost/profit figures are only slightly off, not
+						// fabricated. Denominator for the percentage is this
+						// same product's own 'revenue' (built up below) — by
+						// construction, revenue_covered + revenue_uncovered
+						// always sums to it exactly, since every line's
+						// net_revenue lands in exactly one of the three.
+						'revenue_covered'   => 0.0,
+						'revenue_uncovered' => 0.0,
 					);
 				}
 
@@ -383,9 +388,10 @@ class ProfitLens_Profit_Engine {
 
 				if ( null !== $line['unit_cost'] ) {
 					$revenue_covered += $line['net_revenue'];
+					$products[ $product_id ]['revenue_covered'] += $line['net_revenue'];
 				} else {
 					$revenue_uncovered += $line['net_revenue'];
-					$products[ $product_id ]['has_cost'] = false;
+					$products[ $product_id ]['revenue_uncovered'] += $line['net_revenue'];
 				}
 			}
 		}
@@ -395,6 +401,23 @@ class ProfitLens_Profit_Engine {
 			$products[ $product_id ]['margin_pct'] = $product['revenue'] > 0.0
 				? ( $products[ $product_id ]['profit'] / $product['revenue'] ) * 100
 				: 0.0;
+
+			// Same convention format_cost_coverage() uses at the period
+			// level for the exact same "no revenue to divide by" case: a
+			// product with zero revenue this period (e.g. every sale was
+			// fully refunded) has nothing to be "overstated", so it isn't
+			// flagged as uncovered by default.
+			$products[ $product_id ]['revenue_covered_pct'] = $product['revenue'] > 0.0
+				? ( $product['revenue_covered'] / $product['revenue'] ) * 100
+				: 100.0;
+
+			// Retained for any consumer still reading the old all-or-nothing
+			// flag — true only when every line's cost was known, i.e.
+			// coverage is (within float rounding of) exactly 100%. New code
+			// should read revenue_covered_pct instead, which distinguishes
+			// "no cost anywhere" from "cost known for most of this
+			// product's sales" — has_cost collapses that distinction.
+			$products[ $product_id ]['has_cost'] = $products[ $product_id ]['revenue_covered_pct'] >= 99.95;
 		}
 
 		return array(
@@ -656,14 +679,27 @@ class ProfitLens_Profit_Engine {
 
 		foreach ( $data['products'] as $product ) {
 			$products[] = array(
-				'id'         => $product['id'],
-				'name'       => $product['name'],
-				'units'      => (int) round( $product['units'] ),
-				'revenue'    => round( $product['revenue'], 2 ),
-				'cost'       => round( $product['cost'], 2 ),
-				'profit'     => round( $product['profit'], 2 ),
-				'margin_pct' => round( $product['margin_pct'], 1 ),
-				'has_cost'   => $product['has_cost'],
+				'id'                  => $product['id'],
+				'name'                => $product['name'],
+				'units'               => (int) round( $product['units'] ),
+				'revenue'             => round( $product['revenue'], 2 ),
+				'cost'                => round( $product['cost'], 2 ),
+				'profit'              => round( $product['profit'], 2 ),
+				'margin_pct'          => round( $product['margin_pct'], 1 ),
+				// Deprecated in favor of revenue_covered_pct below, kept for
+				// back-compat — true iff revenue_covered_pct is (within
+				// float rounding of) 100.
+				'has_cost'            => $product['has_cost'],
+				// What fraction of THIS product's own revenue in the period
+				// is backed by a known cost — same metric, same name, and
+				// the same severity tiers as the period-level
+				// cost_coverage.revenue_covered_pct (see
+				// CostCoverageNotice.jsx's getTier()), just scoped to one
+				// row instead of the whole period. Lets ProductTable tell
+				// "no cost anywhere" (0%) apart from "cost known for most
+				// of what sold" (e.g. 90%) instead of collapsing both into
+				// the same has_cost:false.
+				'revenue_covered_pct' => round( $product['revenue_covered_pct'], 1 ),
 			);
 		}
 

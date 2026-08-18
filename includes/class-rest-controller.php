@@ -9,9 +9,14 @@
  * ProfitLens_Cost_Component::get_note()) so the UI can surface a caveat
  * like shipping's "this is what was collected, not the real logistics
  * cost" without a separate request; and each `products` entry now carries
- * a `has_cost` boolean (false when any of that product's sales in the
- * period had no known unit cost) so ProductTable can show a "No cost set"
- * chip instead of a profit figure that looks trustworthy but isn't.
+ * `revenue_covered_pct` (what fraction of THAT product's own revenue this
+ * period is backed by a known cost — same metric/name/severity tiers as
+ * the period-level cost_coverage.revenue_covered_pct, just scoped to one
+ * row) plus the older `has_cost` boolean it supersedes (true iff
+ * revenue_covered_pct is ~100 — kept for back-compat, new code should read
+ * the percentage instead) so ProductTable can distinguish "no cost
+ * anywhere" from "cost known for most of what sold" instead of collapsing
+ * both into the same flat chip.
  *
  * QA override without URL parameters (debug querystring params tend to
  * survive into production): use the `profitlens_demo_status` /

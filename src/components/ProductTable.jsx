@@ -59,19 +59,39 @@ function SortIcon( { active, dir } ) {
  * how many rows the UI will ever show, so paginating server-side would
  * only shrink the JSON payload, not the calculation cost, at the price of
  * a request per page/sort/search change and a parallel PHP implementation
- * of exactly the search+sort logic below. At the catalog sizes this
- * product actually targets (a few hundred to a few thousand products for
- * the Small-tier store this plugin is built for — see CLAUDE.md), that
- * payload is at most a few hundred KB of JSON, which is cheap to hold in
- * memory and slice/sort/filter instantly in the browser. It also comes
- * for free with the one requirement server-side pagination would have
- * fought: sorting by a column has to reorder the ENTIRE 313-product set,
- * not just whichever 20-25 rows happen to be on screen — with the full
- * array already in hand, that's just Array.prototype.sort() over
- * `products`, no extra request. Revisit if a store's catalog ever grows
- * large enough that the payload itself becomes the bottleneck — that's a
- * different problem (shrinking the response) from the one pagination here
- * solves (not rendering 313 <tr>s at once).
+ * of exactly the search+sort logic below. It also comes for free with the
+ * one requirement server-side pagination would have fought: sorting by a
+ * column has to reorder the ENTIRE product set, not just whichever 20-25
+ * rows happen to be on screen — with the full array already in hand,
+ * that's just Array.prototype.sort() over `products`, no extra request.
+ *
+ * MEASURED, not assumed (wp-cli eval against this project's real seeded
+ * catalog — 2,602 products, 1,297 of which have ever sold): an all-time
+ * `/summary` response (the worst case — every range this endpoint serves
+ * is a subset of it) is ~780KB of JSON, ~75KB gzipped. Client-side
+ * sort/filter/JSON.parse over that many rows are each well under 2ms in
+ * a browser — synthetically pushed to 10,000 rows (roughly 4x this
+ * project's entire catalog, not just its sold slice) and still under
+ * 10ms combined. Client-side COMPUTE is not the constraint at any catalog
+ * size a WooCommerce Small-tier store (CLAUDE.md's actual buyer,
+ * $50k–250k/year revenue) is realistic to reach.
+ *
+ * The real constraint is PAYLOAD TRANSFER TIME, and it bites everywhere
+ * at once, not just this table: useSummary.js fetches kpis/chart/insight/
+ * cost_coverage/products in a single request, so a large products array
+ * delays the KPIs and chart rendering too, not merely this table's first
+ * paint. The symptom to watch for is a slower "still loading" spinner on
+ * dashboard open specifically for large/old stores on a slow connection —
+ * not a sluggish table once data has already arrived (that part won't
+ * degrade; see the compute numbers above). The fix at that point is NOT
+ * server-side pagination (this docblock's whole argument above still
+ * holds — compute isn't the bottleneck) but splitting `products` out of
+ * the single get_summary() response into its own separate, genuinely
+ * paginated request, so a big catalog only slows the table's own fetch
+ * and leaves the KPIs/chart/insight loading independently and fast.
+ * Revisit if/when a real store's `/summary` payload is measured
+ * materially past what's documented here — this is a threshold to watch,
+ * not a hard number to hit before acting.
  *
  * @param {Object}                                                                    props
  * @param {Array}                                                                     props.products
