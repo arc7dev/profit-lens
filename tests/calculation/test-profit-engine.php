@@ -163,6 +163,94 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 		$this->assertEquals( 30.0, $coverage['revenue_uncovered'] );
 	}
 
+	/**
+	 * Per-product revenue_covered_pct (feeds ProductTable's coverage chip)
+	 * and the has_cost flag it supersedes: full coverage (100%, has_cost
+	 * true) for a product whose cost is defined, zero coverage (0%,
+	 * has_cost false) for one that isn't — checked on the same two
+	 * products/order as the revenue-coverage test above, but reading
+	 * products instead of cost_coverage. These are the two ends of the
+	 * range; the partial case in between is covered separately below.
+	 */
+	public function test_product_coverage_pct_reflects_whether_its_own_cost_is_known() {
+		$with_cost    = $this->create_product( 5.0, 20.0 );
+		$without_cost = $this->create_product( null, 30.0 );
+
+		$this->create_order(
+			array(
+				array( 'product' => $with_cost, 'qty' => 1, 'total' => 20.0 ),
+				array( 'product' => $without_cost, 'qty' => 1, 'total' => 30.0 ),
+			)
+		);
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		$by_id = array();
+		foreach ( $products as $product ) {
+			$by_id[ $product['id'] ] = $product;
+		}
+
+		$this->assertEquals( 100.0, $by_id[ $with_cost->get_id() ]['revenue_covered_pct'] );
+		$this->assertTrue( $by_id[ $with_cost->get_id() ]['has_cost'] );
+
+		$this->assertEquals( 0.0, $by_id[ $without_cost->get_id() ]['revenue_covered_pct'] );
+		$this->assertFalse( $by_id[ $without_cost->get_id() ]['has_cost'] );
+	}
+
+	/**
+	 * KNOWN-LIMITATION CHARACTERIZATION, not a desired behavior — read this
+	 * before "fixing" it. Cost is NOT versioned per order: resolve_line_items()
+	 * always reads the product's CURRENT get_cogs_total_value() (a pure
+	 * function of the product's present state — confirmed against
+	 * WooCommerce's own abstract-wc-product.php: no date/order parameter
+	 * anywhere in that call chain), evaluated once per product_id and
+	 * applied uniformly to every line of that product a single aggregate()
+	 * pass touches. So unsetting a product's cost between two of its own
+	 * orders does NOT produce a 50/50 split here — by the time aggregate()
+	 * runs (after both orders exist), the product has no cost at all, and
+	 * BOTH lines come back uncovered, not just the second one.
+	 *
+	 * This is a real product limitation, not just a test quirk: it means
+	 * editing a product's cost today retroactively changes profit for every
+	 * PAST period too, not only future orders — tracked as
+	 * github.com/arc7dev/profit-lens/issues/7 and noted in the parent
+	 * project's CLAUDE.md. This test exists to characterize today's actual
+	 * behavior, not to assert it's correct.
+	 *
+	 * If cost resolution is ever changed to snapshot/version cost per order
+	 * (fixing the limitation above), THIS TEST WILL START FAILING (0.0 will
+	 * become 50.0) — that is the fix working, not a regression. Update the
+	 * assertion then; don't "restore" it to 0.0. Separately confirmed this
+	 * isn't a contrived edge case: checked revenue_covered_pct across all
+	 * 1,297 products that have ever sold in the seeded dataset (full
+	 * history) — 154 at 0%, 1,143 at 100%, zero anywhere in between. A
+	 * single product's coverage is structurally binary today; ProductTable
+	 * only needs the two states has_cost already covers, not a third
+	 * "partial" tier.
+	 */
+	public function test_cost_resolution_is_not_versioned_per_order() {
+		$product = $this->create_product( 5.0, 20.0 );
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		// Unset the cost after the first order — strip it directly rather
+		// than via a second product, so both order lines point at the
+		// exact same product_id.
+		$product->set_cogs_value( null );
+		$product->save();
+
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		// Both orders' revenue counts as uncovered — not just the second
+		// one — because the product has no cost by the time aggregate()
+		// runs, and that single current state applies to every line.
+		$this->assertEquals( 0.0, $products[0]['revenue_covered_pct'] );
+		$this->assertFalse( $products[0]['has_cost'] );
+	}
+
 	// -----------------------------------------------------------------
 	// Case 25/26: zero-price product doesn't divide by zero.
 	// -----------------------------------------------------------------

@@ -15,6 +15,7 @@ const PRODUCTS = [
 		cost: 1090.0,
 		profit: 784.0,
 		margin_pct: 36.0,
+		has_cost: true,
 	},
 	{
 		id: 2,
@@ -24,6 +25,7 @@ const PRODUCTS = [
 		cost: 870.0,
 		profit: 729.0,
 		margin_pct: 39.2,
+		has_cost: true,
 	},
 	{
 		id: 3,
@@ -33,6 +35,7 @@ const PRODUCTS = [
 		cost: 1140.0,
 		profit: 270.0,
 		margin_pct: 16.5,
+		has_cost: true,
 	},
 	{
 		id: 4,
@@ -42,6 +45,7 @@ const PRODUCTS = [
 		cost: 600.0,
 		profit: 466.0,
 		margin_pct: 37.6,
+		has_cost: true,
 	},
 	{
 		id: 5,
@@ -51,6 +55,7 @@ const PRODUCTS = [
 		cost: 860.0,
 		profit: 129.0,
 		margin_pct: 11.2,
+		has_cost: true,
 	},
 	{
 		id: 6,
@@ -60,6 +65,7 @@ const PRODUCTS = [
 		cost: 590.0,
 		profit: 166.0,
 		margin_pct: 18.9,
+		has_cost: true,
 	},
 	{
 		id: 7,
@@ -69,6 +75,7 @@ const PRODUCTS = [
 		cost: 430.0,
 		profit: 103.0,
 		margin_pct: 16.6,
+		has_cost: true,
 	},
 	{
 		id: 8,
@@ -78,6 +85,21 @@ const PRODUCTS = [
 		cost: 690.0,
 		profit: -300.0,
 		margin_pct: -66.1,
+		has_cost: true,
+	},
+	// Demonstrates ProductTable's "No cost set" chip — cost is $0 (not a
+	// real $0 COGS, an unknown one) and profit equals gross revenue,
+	// exactly the "may be overstated" case the chip exists to flag instead
+	// of showing this as if it were a genuinely 100%-margin product.
+	{
+		id: 9,
+		name: 'Wool Beanie — Charcoal',
+		units: 18,
+		revenue: 342.0,
+		cost: 0.0,
+		profit: 342.0,
+		margin_pct: 100.0,
+		has_cost: false,
 	},
 ];
 
