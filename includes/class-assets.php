@@ -64,12 +64,23 @@ class ProfitLens_Assets {
 			self::HANDLE,
 			'profitLensData',
 			array(
-				'restNamespace'  => ProfitLens_REST_Controller::REST_NAMESPACE,
-				'currencySymbol' => get_woocommerce_currency_symbol(),
-				'currencyCode'   => get_woocommerce_currency(),
+				'restNamespace'     => ProfitLens_REST_Controller::REST_NAMESPACE,
+				'currencySymbol'    => get_woocommerce_currency_symbol(),
+				'currencyCode'      => get_woocommerce_currency(),
+				// Store-configured formatting for everything else about a
+				// price — not date-scoped, so this belongs here (localized
+				// once per page load) rather than repeated on every /summary
+				// response. formatCurrency() (src/utils/currency.js) is the
+				// only place these combine into a rendered string; every
+				// component goes through it instead of hardcoding "$" +
+				// toLocaleString(), which breaks for a store using a comma
+				// decimal separator or a symbol placed after the number.
+				'decimalSeparator'  => wc_get_price_decimal_separator(),
+				'thousandSeparator' => wc_get_price_thousand_separator(),
+				'currencyPosition'  => get_option( 'woocommerce_currency_pos', 'left' ),
 				// The dev state switcher (Dashboard.jsx) only shows up
 				// when this is true — never on a production site.
-				'isDebug'        => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				'isDebug'           => defined( 'WP_DEBUG' ) && WP_DEBUG,
 				// "Today", computed in the site's configured timezone —
 				// the same current_datetime() the REST controller itself
 				// anchors named ranges to (class-rest-controller.php's
@@ -77,7 +88,7 @@ class ProfitLens_Assets {
 				// not the browser's local date, to decide what counts as
 				// "a future date" — a browser in a different timezone than
 				// the site must not get a different validation answer.
-				'siteToday'      => current_datetime()->format( 'Y-m-d' ),
+				'siteToday'         => current_datetime()->format( 'Y-m-d' ),
 				// @wordpress/components' DatePicker already renders month/
 				// day names through @wordpress/date's own i18n (localized
 				// automatically wherever 'wp-date' is enqueued — no action
@@ -85,8 +96,8 @@ class ProfitLens_Assets {
 				// are for the parts DatePicker leaves to the caller: how
 				// CustomRangePicker prints the applied range on its own
 				// trigger button, and which day the calendar week starts on.
-				'dateFormat'     => get_option( 'date_format' ),
-				'startOfWeek'    => (int) get_option( 'start_of_week', 0 ),
+				'dateFormat'        => get_option( 'date_format' ),
+				'startOfWeek'       => (int) get_option( 'start_of_week', 0 ),
 			)
 		);
 

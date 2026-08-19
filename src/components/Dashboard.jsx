@@ -6,6 +6,7 @@ import {
 	getMockSummary,
 } from '../data/mock';
 import { useSummary } from '../hooks/useSummary';
+import { formatCurrency } from '../utils/currency';
 import CostBreakdown from './CostBreakdown';
 import CostCoverageNotice from './CostCoverageNotice';
 import CustomRangePicker from './CustomRangePicker';
@@ -56,11 +57,6 @@ function MockOverrideSwitcher( { override, onChange } ) {
 			{ ! override && <span>(showing real data)</span> }
 		</div>
 	);
-}
-
-function formatCurrency( amount ) {
-	const isLoss = amount < 0;
-	return `${ isLoss ? '−' : '' }$${ Math.abs( amount ).toLocaleString() }`;
 }
 
 export default function Dashboard() {
@@ -244,7 +240,10 @@ export default function Dashboard() {
 							tone={ isNetLoss ? 'loss' : 'profit' }
 							subTone={ changeTone }
 							label="Net Profit"
-							value={ formatCurrency( kpis.net_profit.amount ) }
+							value={ formatCurrency(
+								kpis.net_profit.amount,
+								0
+							) }
 							sub={ changeSub }
 						/>
 						<KpiCard
@@ -254,12 +253,15 @@ export default function Dashboard() {
 						/>
 						<KpiCard
 							label="Revenue"
-							value={ formatCurrency( kpis.revenue.amount ) }
+							value={ formatCurrency( kpis.revenue.amount, 0 ) }
 							sub={ `${ kpis.revenue.orders_count } orders · ${ range.label }` }
 						/>
 						<KpiCard
 							label="Total Costs"
-							value={ formatCurrency( kpis.total_costs.amount ) }
+							value={ formatCurrency(
+								kpis.total_costs.amount,
+								0
+							) }
 							sub="COGS · fees · shipping · refunds"
 						/>
 					</div>
