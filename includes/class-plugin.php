@@ -28,6 +28,7 @@ class ProfitLens_Plugin {
 		'ProfitLens_Assets'                     => 'class-assets.php',
 		'ProfitLens_REST_Controller'             => 'class-rest-controller.php',
 		'ProfitLens_CLI_Verify'                  => 'class-cli-verify.php',
+		'ProfitLens_Cost_Snapshotter'            => 'class-cost-snapshotter.php',
 		'ProfitLens_Profit_Engine'               => 'calculation/class-profit-engine.php',
 		'ProfitLens_Cost_Source'                 => 'calculation/interface-cost-source.php',
 		'ProfitLens_Cost_Source_Cogs'             => 'calculation/class-cost-source-cogs.php',
@@ -52,6 +53,11 @@ class ProfitLens_Plugin {
 	 * @var ProfitLens_REST_Controller
 	 */
 	public $rest_controller;
+
+	/**
+	 * @var ProfitLens_Cost_Snapshotter
+	 */
+	public $cost_snapshotter;
 
 	/**
 	 * Returns (and creates, if needed) the plugin's single instance.
@@ -96,9 +102,10 @@ class ProfitLens_Plugin {
 	 * in its constructor.
 	 */
 	private function init() {
-		$this->admin           = new ProfitLens_Admin();
-		$this->assets          = new ProfitLens_Assets();
-		$this->rest_controller = new ProfitLens_REST_Controller();
+		$this->admin            = new ProfitLens_Admin();
+		$this->assets           = new ProfitLens_Assets();
+		$this->rest_controller  = new ProfitLens_REST_Controller();
+		$this->cost_snapshotter = new ProfitLens_Cost_Snapshotter();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			ProfitLens_CLI_Verify::register();

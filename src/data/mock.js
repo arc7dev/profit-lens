@@ -126,6 +126,12 @@ const COST_COVERAGE = {
 	pct: 93.3,
 	revenue_covered_pct: 97.1,
 	revenue_uncovered: 291.0,
+	// Mock value deliberately below 100 (unlike revenue_covered_pct's real
+	// scenario here) to exercise the CostCoverageNotice snapshot line in
+	// the WP_DEBUG mock switcher — see issue #7: no order placed before
+	// this feature shipped has a snapshot, so this is realistically low
+	// right after a store upgrades, even at a high revenue_covered_pct.
+	snapshot_covered_pct: 41.5,
 };
 
 const INSIGHT = {
@@ -310,6 +316,7 @@ export function getMockEmptySummary( rangeKey = '30d' ) {
 			pct: 0,
 			revenue_covered_pct: 0,
 			revenue_uncovered: 0,
+			snapshot_covered_pct: 0,
 		},
 		chart: { series: [] },
 		cost_breakdown: [],
