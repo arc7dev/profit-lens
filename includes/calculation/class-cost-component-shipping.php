@@ -46,4 +46,11 @@ class ProfitLens_Cost_Component_Shipping implements ProfitLens_Cost_Component {
 	public function is_estimated() {
 		return false;
 	}
+
+	/**
+	 * @return string
+	 */
+	public function get_note() {
+		return __( 'This is what customers were charged for shipping, not the store\'s real shipping cost — Free has no source for the latter.', 'profit-lens' );
+	}
 }

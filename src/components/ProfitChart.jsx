@@ -8,6 +8,8 @@ import {
 	YAxis,
 } from 'recharts';
 
+import { formatCurrency } from '../utils/currency';
+
 const MINT = '#98dbaf';
 const PROFIT = '#1f8a5b';
 const MUTED = '#64757f';
@@ -30,7 +32,7 @@ function ChartTooltip( { active, payload, label } ) {
 					( isLoss ? ' pl-chart__tooltip-value--loss' : '' )
 				}
 			>
-				{ isLoss ? '−' : '' }${ Math.abs( value ).toLocaleString() }
+				{ formatCurrency( value, 0 ) }
 			</div>
 		</div>
 	);
@@ -103,7 +105,7 @@ export default function ProfitChart( { rangeLabel, series } ) {
 							fontFamily: 'var(--pl-font-mono)',
 							fill: MUTED,
 						} }
-						tickFormatter={ ( v ) => `$${ v }` }
+						tickFormatter={ ( v ) => formatCurrency( v, 0 ) }
 						width={ 40 }
 					/>
 

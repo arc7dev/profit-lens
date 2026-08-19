@@ -163,6 +163,91 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 		$this->assertEquals( 30.0, $coverage['revenue_uncovered'] );
 	}
 
+	/**
+	 * Per-product revenue_covered_pct (feeds ProductTable's coverage chip)
+	 * and the has_cost flag it supersedes: full coverage (100%, has_cost
+	 * true) for a product whose cost is defined, zero coverage (0%,
+	 * has_cost false) for one that isn't — checked on the same two
+	 * products/order as the revenue-coverage test above, but reading
+	 * products instead of cost_coverage. These are the two ends of the
+	 * range; the partial case in between is covered separately below.
+	 */
+	public function test_product_coverage_pct_reflects_whether_its_own_cost_is_known() {
+		$with_cost    = $this->create_product( 5.0, 20.0 );
+		$without_cost = $this->create_product( null, 30.0 );
+
+		$this->create_order(
+			array(
+				array( 'product' => $with_cost, 'qty' => 1, 'total' => 20.0 ),
+				array( 'product' => $without_cost, 'qty' => 1, 'total' => 30.0 ),
+			)
+		);
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		$by_id = array();
+		foreach ( $products as $product ) {
+			$by_id[ $product['id'] ] = $product;
+		}
+
+		$this->assertEquals( 100.0, $by_id[ $with_cost->get_id() ]['revenue_covered_pct'] );
+		$this->assertTrue( $by_id[ $with_cost->get_id() ]['has_cost'] );
+
+		$this->assertEquals( 0.0, $by_id[ $without_cost->get_id() ]['revenue_covered_pct'] );
+		$this->assertFalse( $by_id[ $without_cost->get_id() ]['has_cost'] );
+	}
+
+	/**
+	 * FIXED as of issue #7 (github.com/arc7dev/profit-lens/issues/7) — this
+	 * test used to characterize the opposite, known-bad behavior (see git
+	 * history for the original KNOWN-LIMITATION version of this test, and
+	 * its own docblock's explicit instruction: "if cost resolution is ever
+	 * changed to snapshot/version cost per order, THIS TEST WILL START
+	 * FAILING (0.0 will become 50.0) — that is the fix working, not a
+	 * regression"). It now asserts the fix.
+	 *
+	 * ProfitLens_Cost_Snapshotter freezes each line's resolved unit cost as
+	 * order item meta the moment an order first becomes "counted" — see
+	 * ProfitLens_Cost_Component_Product::write_snapshot(). Both orders here
+	 * are created directly in 'completed' status (create_order()'s
+	 * default), which — confirmed against WooCommerce core — means neither
+	 * one ever passes through a status TRANSITION on an already-read
+	 * object, so it's woocommerce_new_order, not
+	 * woocommerce_order_status_changed, that fires the snapshot for each.
+	 * That's exactly the "order born already in a counted status" case
+	 * ProfitLens_Cost_Snapshotter has to cover on its own — see its
+	 * class docblock.
+	 *
+	 * The unset happens strictly BETWEEN the two create_order() calls, so
+	 * order 1 snapshots the real $5.00 cost and order 2 snapshots
+	 * SNAPSHOT_UNKNOWN — a real 50/50 split, not the all-or-nothing result
+	 * the product's current state alone would give.
+	 */
+	public function test_cost_resolution_is_now_versioned_per_order_via_snapshot() {
+		$product = $this->create_product( 5.0, 20.0 );
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		// Unset the cost after the first order — strip it directly rather
+		// than via a second product, so both order lines point at the
+		// exact same product_id.
+		$product->set_cogs_value( null );
+		$product->save();
+
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+		$products = $this->engine->get_summary( $after, $before )['products'];
+
+		// Order 1's line is frozen at the $5.00 cost that was live when it
+		// was snapshotted — order 2's line, snapshotted after the cost was
+		// removed, is not. Exactly half this product's period revenue is
+		// covered, matching the per-order split rather than the product's
+		// single current state.
+		$this->assertEquals( 50.0, $products[0]['revenue_covered_pct'] );
+		$this->assertFalse( $products[0]['has_cost'] );
+	}
+
 	// -----------------------------------------------------------------
 	// Case 25/26: zero-price product doesn't divide by zero.
 	// -----------------------------------------------------------------
@@ -194,6 +279,32 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 
 		$this->assertEquals( 70.0, $summary['kpis']['revenue']['amount'] );
 		$this->assertEquals( 2, $summary['kpis']['revenue']['orders_count'] );
+	}
+
+	/**
+	 * get_net_profit() is a lighter-weight path to the exact same profit
+	 * figure get_summary() computes (built for change_pct's prior-period
+	 * comparison, which never needs the rest of the summary) — it must
+	 * never drift from what get_summary() would have said for the same
+	 * range, including with a refund in play (exercises the same
+	 * cost-component math, not just plain revenue).
+	 */
+	public function test_get_net_profit_matches_get_summary() {
+		$p1 = $this->create_product( 5.0, 20.0 );
+		$p2 = $this->create_product( 8.0, 30.0 );
+
+		$order1  = $this->create_order( array( array( 'product' => $p1, 'qty' => 2, 'total' => 40.0 ) ) );
+		$item_id = array_key_first( $order1->get_items( 'line_item' ) );
+		$this->refund_item( $order1, $item_id, 20.0, 1 );
+
+		$this->create_order( array( array( 'product' => $p2, 'qty' => 1, 'total' => 30.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+
+		$summary = $this->engine->get_summary( $after, $before );
+		$net_profit = $this->engine->get_net_profit( $after, $before );
+
+		$this->assertSame( $summary['kpis']['net_profit']['amount'], $net_profit );
 	}
 
 	public function test_chart_series_fills_gaps_with_zero() {

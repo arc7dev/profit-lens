@@ -98,17 +98,23 @@ class Test_ProfitLens_Cost_Component_Product extends ProfitLens_Calculation_Test
 	}
 
 	/**
-	 * Case 16: a product with an explicitly configured $0 cost is a real,
-	 * known cost — distinct from case 15 and must count as "covered".
+	 * Case 16, as originally designed, doesn't hold — see the equivalent
+	 * (and fuller explanation of why) in
+	 * Test_ProfitLens_Cost_Source_Cogs::test_woocommerce_collapses_explicit_zero_cost_to_null().
+	 * WooCommerce itself never lets get_cogs_value() return 0.0, through
+	 * any path, so a product line here behaves exactly like case 15
+	 * (no cost known) whether or not $0 was ever "set". Confirming that,
+	 * instead of asserting a state WooCommerce doesn't allow to exist.
 	 */
-	public function test_product_with_explicit_zero_cost_is_known_not_excluded() {
+	public function test_product_with_attempted_zero_cost_behaves_like_no_cost() {
 		$product = $this->create_product( 0.0, 20.0 );
 		$order   = $this->create_order( array( array( 'product' => $product, 'qty' => 4, 'total' => 80.0 ) ) );
 
 		$lines = $this->component->resolve_line_items( $order );
 		$line  = reset( $lines );
 
-		$this->assertSame( 0.0, $line['unit_cost'], 'An explicit $0 cost must resolve to 0.0, not null.' );
+		$this->assertNull( $line['unit_cost'] );
+		$this->assertEquals( 0.0, $line['line_cost'] );
 	}
 
 	/**
@@ -155,5 +161,6 @@ class Test_ProfitLens_Cost_Component_Product extends ProfitLens_Calculation_Test
 	public function test_key_label_and_is_estimated() {
 		$this->assertSame( 'product_cost', $this->component->get_key() );
 		$this->assertFalse( $this->component->is_estimated() );
+		$this->assertNull( $this->component->get_note() );
 	}
 }
