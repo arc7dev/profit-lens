@@ -416,7 +416,22 @@
  * gracefully or overlapping. justify-content: space-between across the
  * three children (title / search-wrap / actions) is what turns the
  * search box's own max-width cap into blank space distributed on BOTH
- * sides of it, instead of one big gap trailing after it. */
+ * sides of it, instead of one big gap trailing after it.
+ *
+ * This wrap is a designed second state, not a tolerated fallback — it's
+ * what a real ~1024px admin viewport (WP's own menu, expanded, plus this
+ * page's own max-width, leaves ~750-800px of actual header room, well
+ * under what title + a genuinely usable search box + Export CSV/the
+ * count need together) resolves to every time, not an edge case a few
+ * people hit. Row 1 becomes title + search; row 2 becomes Export CSV +
+ * the count, which is what the three children naturally settle into
+ * under space-between with only two of them left on the second line —
+ * no reordering needed, just given real spacing instead of the bare
+ * 10px this row-gap used to be: 18px reads as an intentional gap
+ * between two rows of content, not a rounding accident, and both rows
+ * keep sitting at the same 20px inset (this rule's own padding) as
+ * everything else in the card rather than either one looking like it
+ * drifted from the shared margin. */
 .pl-table-card__header {
 	padding: 18px 20px 14px;
 	border-bottom: 1px solid var(--pl-color-border);
@@ -424,7 +439,7 @@
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 10px 20px;
+	gap: 18px 20px;
 }
 
 .pl-table-card__title {
@@ -445,14 +460,33 @@
  * header rather than as a filter scoped to the table below it. 400px
  * comfortably fits a 4-5 word query in the mono search font at this
  * size — sized by eye against real queries, not a round number picked
- * blind. min-width is the floor before flex-wrap gives it its own full
- * line on a narrow viewport instead of being crushed unreadably thin. */
+ * blind.
+ *
+ * flex-basis and min-width are both 350px — NOT the lower number
+ * (220px/160px) an earlier version of this rule used. That version
+ * looked fine at the two widths it was actually checked against
+ * (1024px, where the header wraps, and 1280px+, where the box reaches
+ * its 400px cap) but left a wide, unchecked middle zone — content
+ * widths roughly 810-950px, i.e. real ~1080-1220px browser viewports —
+ * where the header does NOT wrap (correctly stays one line) yet the box
+ * had already shrunk to 220-365px chasing that low flex-basis, which is
+ * exactly the cramped, sideways-scrolling box this whole change exists
+ * to fix, just relocated to a different width instead of eliminated.
+ * flex-basis governs the width CSS uses to decide whether a line even
+ * needs to wrap in the first place (before any shrinking is applied) —
+ * raising it to 350px means the header now commits to wrapping AT that
+ * same point instead of first trying to squeeze the box down through
+ * that dead zone, so within any single line the box only ever ranges
+ * between 350 (this basis) and 400 (its cap) — never the unusably
+ * narrow values in between that used to appear right before the wrap
+ * threshold. min-width matches it as a hard floor for the same reason,
+ * not just as flex-wrap's fallback trigger anymore. */
 .pl-table-card__search-wrap {
 	position: relative;
 	display: flex;
 	align-items: center;
-	flex: 1 1 220px;
-	min-width: 160px;
+	flex: 1 1 350px;
+	min-width: 350px;
 	max-width: 400px;
 }
 
