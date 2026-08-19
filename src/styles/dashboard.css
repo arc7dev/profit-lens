@@ -77,6 +77,43 @@
 	font-weight: 500;
 }
 
+/* Dropdown wraps its toggle in an extra element, breaking the plain
+ * :first-child/adjacency styling above for whichever range button becomes
+ * the custom picker's trigger — restated explicitly here instead. */
+.pl-range__custom {
+	display: flex;
+}
+
+.pl-range__custom .pl-range__btn {
+	border-left: 1px solid var(--pl-color-border);
+}
+
+.pl-custom-range__popover {
+	padding: 16px;
+}
+
+.pl-custom-range__calendars {
+	display: flex;
+	gap: 16px;
+}
+
+.pl-custom-range__label {
+	font-size: 11px;
+	color: var(--pl-color-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin-bottom: 6px;
+}
+
+.pl-custom-range__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--pl-color-border);
+}
+
 /* ── KPI cards ─────────────────────────────────────────────────────────── */
 
 .pl-kpis {
@@ -142,11 +179,15 @@
 
 /* ── Cost coverage notice ─────────────────────────────────────────────── */
 
+/* Three severity tiers below "fully covered" (which renders nothing) —
+ * moderate/low/critical escalate border weight, background saturation,
+ * and font weight together, in that order, so the same copy reads as a
+ * nudge at 92% coverage and as something you can't skim past at 35%. */
+
 .pl-coverage {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
+	gap: 10px;
 	padding: 9px 14px;
 	margin-bottom: 12px;
 	background: var(--pl-color-border-soft);
@@ -162,9 +203,46 @@
 	background: rgba(192, 57, 43, 0.06);
 }
 
+.pl-coverage--critical {
+	border-left-width: 4px;
+	border-left-color: var(--pl-color-loss);
+	background: rgba(192, 57, 43, 0.1);
+	padding: 11px 16px;
+	font-weight: 500;
+}
+
+.pl-coverage__icon {
+	color: var(--pl-color-loss);
+	font-size: 15px;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.pl-coverage__text {
+	flex: 1;
+}
+
 .pl-coverage__figure {
 	font-family: var(--pl-font-mono);
 	font-weight: 500;
+}
+
+.pl-coverage--critical .pl-coverage__figure {
+	font-weight: 700;
+}
+
+.pl-coverage__link {
+	font-family: var(--pl-font-mono);
+	font-size: 11px;
+	color: var(--pl-color-muted);
+	text-decoration: none;
+	white-space: nowrap;
+	border-bottom: 1px solid #b0c4ce;
+	flex-shrink: 0;
+}
+
+.pl-coverage__link:hover {
+	color: var(--pl-color-text);
 }
 
 /* ── Insight bar ───────────────────────────────────────────────────────── */
@@ -332,12 +410,36 @@
 	overflow: hidden;
 }
 
+/* flex-wrap + a two-axis gap (row-gap for when it wraps, column-gap for
+ * the single-line case) — a narrow admin viewport can't fit title +
+ * search + Export CSV + the count on one line without either wrapping
+ * gracefully or overlapping. justify-content: space-between across the
+ * three children (title / search-wrap / actions) is what turns the
+ * search box's own max-width cap into blank space distributed on BOTH
+ * sides of it, instead of one big gap trailing after it.
+ *
+ * This wrap is a designed second state, not a tolerated fallback — it's
+ * what a real ~1024px admin viewport (WP's own menu, expanded, plus this
+ * page's own max-width, leaves ~750-800px of actual header room, well
+ * under what title + a genuinely usable search box + Export CSV/the
+ * count need together) resolves to every time, not an edge case a few
+ * people hit. Row 1 becomes title + search; row 2 becomes Export CSV +
+ * the count, which is what the three children naturally settle into
+ * under space-between with only two of them left on the second line —
+ * no reordering needed, just given real spacing instead of the bare
+ * 10px this row-gap used to be: 18px reads as an intentional gap
+ * between two rows of content, not a rounding accident, and both rows
+ * keep sitting at the same 20px inset (this rule's own padding) as
+ * everything else in the card rather than either one looking like it
+ * drifted from the shared margin. */
 .pl-table-card__header {
 	padding: 18px 20px 14px;
 	border-bottom: 1px solid var(--pl-color-border);
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
+	gap: 18px 20px;
 }
 
 .pl-table-card__title {
@@ -347,12 +449,120 @@
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--pl-color-muted);
+	flex-shrink: 0;
+}
+
+/* Flexible, not fixed-width: this catalog's product names are long and
+ * a real search is several words ("ultra premium high speed hex") — a
+ * fixed ~180px box made every query scroll sideways inside its own
+ * input. flex: 1 lets it claim space up to max-width; past that, going
+ * full-width would read as competing with "PROFIT BY PRODUCT" for the
+ * header rather than as a filter scoped to the table below it. 400px
+ * comfortably fits a 4-5 word query in the mono search font at this
+ * size — sized by eye against real queries, not a round number picked
+ * blind.
+ *
+ * flex-basis and min-width are both 350px — NOT the lower number
+ * (220px/160px) an earlier version of this rule used. That version
+ * looked fine at the two widths it was actually checked against
+ * (1024px, where the header wraps, and 1280px+, where the box reaches
+ * its 400px cap) but left a wide, unchecked middle zone — content
+ * widths roughly 810-950px, i.e. real ~1080-1220px browser viewports —
+ * where the header does NOT wrap (correctly stays one line) yet the box
+ * had already shrunk to 220-365px chasing that low flex-basis, which is
+ * exactly the cramped, sideways-scrolling box this whole change exists
+ * to fix, just relocated to a different width instead of eliminated.
+ * flex-basis governs the width CSS uses to decide whether a line even
+ * needs to wrap in the first place (before any shrinking is applied) —
+ * raising it to 350px means the header now commits to wrapping AT that
+ * same point instead of first trying to squeeze the box down through
+ * that dead zone, so within any single line the box only ever ranges
+ * between 350 (this basis) and 400 (its cap) — never the unusably
+ * narrow values in between that used to appear right before the wrap
+ * threshold. min-width matches it as a hard floor for the same reason,
+ * not just as flex-wrap's fallback trigger anymore. */
+.pl-table-card__search-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+	flex: 1 1 350px;
+	min-width: 350px;
+	max-width: 400px;
+}
+
+.pl-table-card__search-icon {
+	position: absolute;
+	left: 9px;
+	color: var(--pl-color-muted);
+	pointer-events: none;
+}
+
+/* Scoped under its own wrapper (.pl-table-card__search-wrap
+ * .pl-table-card__search, not the bare class) on purpose — WP admin's
+ * own core styles target `input[type="search"]` with enough specificity
+ * (a type + attribute selector) to beat a single class here, and were
+ * silently winning the padding fight: the icon/clear button were
+ * positioned correctly, but the input's own left/right padding had
+ * collapsed to WP core's 12px, so typed text rendered UNDER the
+ * magnifying-glass icon instead of clear of it. */
+.pl-table-card__search-wrap .pl-table-card__search {
+	width: 100%;
+	padding: 6px 28px 6px 28px;
+	font-size: 12px;
+	color: var(--pl-color-text);
+	background: var(--pl-color-bg);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+
+	/* Chrome/Safari otherwise draw their own native "clear" (×) button
+	 * inside a type="search" input once it has text — redundant with,
+	 * and visually clashing against, .pl-table-card__search-clear. */
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.pl-table-card__search::-webkit-search-cancel-button {
+	display: none;
+}
+
+.pl-table-card__search:focus-visible {
+	outline: 2px solid var(--pl-color-accent);
+	outline-offset: -1px;
+}
+
+.pl-table-card__search-clear {
+	position: absolute;
+	right: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	font-size: 14px;
+	line-height: 1;
+	color: var(--pl-color-muted);
+	background: none;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.pl-table-card__search-clear:hover {
+	color: var(--pl-color-text);
+	background: var(--pl-color-border-soft);
+}
+
+.pl-table-card__search-clear:focus-visible {
+	outline: 2px solid var(--pl-color-accent);
+	outline-offset: 1px;
 }
 
 .pl-table-card__actions {
 	display: flex;
 	align-items: center;
 	gap: 20px;
+	flex-shrink: 0;
 }
 
 .pl-table-card__export {
@@ -383,6 +593,31 @@
 	overflow-x: auto;
 }
 
+/* Deliberately the browser DEFAULT table-layout (auto), not `fixed` —
+ * this went through two other approaches first, both wrong for
+ * different reasons, worth recording so nobody re-tries them:
+ *
+ * 1. table-layout: fixed + name column unset (meant to absorb leftover
+ *    space): fixed layout ignores box-model properties like max-width
+ *    on a cell entirely once column widths are set from the colgroup —
+ *    a clamped cell's actual text rendered narrower than its column,
+ *    leaving a dead gap before the next column on wide viewports.
+ * 2. table-layout: fixed + every column (incl. name) given a literal
+ *    pixel width, table width set to their sum via an inline style:
+ *    fixed the gap, but the table stopped growing with its container —
+ *    a real, wide admin viewport was left with the table sitting at
+ *    its minimum width and a dead STRIP of empty card to its right,
+ *    since nothing was left flexible to absorb the extra room.
+ *
+ * table-layout: fixed's actual purpose — skip measuring cell content
+ * before laying out columns — doesn't even apply here: ProductTable
+ * paginates to 25 DOM rows at a time, not however many thousand
+ * products matched, so there's no large-table layout cost to avoid in
+ * the first place. Auto layout treats each numeric <col>'s width as a
+ * real per-column hint while still leaving width: 100% on the flexible
+ * name cell (.pl-table__cell--name below) free to claim the remainder —
+ * two properties actually cooperating, rather than one working around
+ * the other. */
 .pl-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -434,12 +669,124 @@
 	text-align: right;
 	border-bottom: 1px solid var(--pl-color-border-soft);
 	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	/* Keeps digits the same width regardless of which ones appear, so a
+	 * column of dollar amounts lines up vertically for an at-a-glance
+	 * comparison instead of "1" and "8" shifting the decimal point
+	 * sideways row to row. */
+	font-variant-numeric: tabular-nums;
 }
 
 .pl-table td.pl-table__col--label {
 	text-align: left;
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
+}
+
+/* The product name column: the one column allowed to wrap, specifically
+ * to a 2-line clamp rather than single-line ellipsis. This catalog's
+ * products distinguish themselves by SUFFIX ("... - 3/4" Premium 4 Flute
+ * End Mill" vs "... - 1/2" (0.5000) x 3" LOC") — an end-truncated single
+ * line would make genuinely different products read as identical rows.
+ *
+ * width: 100% is what actually makes this column elastic under table-
+ * layout: auto — it claims whatever's left in the table after the five
+ * numeric <col> widths are satisfied (see ProductTable.jsx's COLUMNS and
+ * the .pl-table comment above for why auto layout + this combination,
+ * not fixed layout, is what gets a flexible column at all). min-width is
+ * the floor before .pl-table-wrap's own horizontal scrollbar (and the
+ * sticky name/profit columns) take over on a narrow admin viewport.
+ *
+ * The clamp lives on an INNER <span> (.pl-table__name-text), not the
+ * <td> itself — tried it directly on the <td> first (overriding its
+ * default display: table-cell to -webkit-box, which -webkit-line-clamp
+ * requires) and the row's rendered height stopped reliably respecting
+ * the 2-line clamp: a 3rd, uncapped line of text was visibly rendering
+ * past where overflow: hidden should have cut it off, because a table
+ * cell no longer participating in the table's own row-height algorithm
+ * as display: table-cell doesn't reliably get its height constrained by
+ * a display: -webkit-box override the same way a normal block/flex
+ * container would. Letting the <td> stay a normal table cell and doing
+ * the box/clamp/overflow entirely on a plain inner element is the
+ * standard, more robust way to clamp text inside a table.
+ *
+ * white-space: normal lives on the SPAN, not the <td>, and has to be
+ * set there explicitly rather than relying on inheritance: `.pl-table
+ * td` sets white-space: nowrap at specificity (0,1,1), which a bare
+ * `.pl-table__cell--name { white-space: normal }` on the <td> itself
+ * can't outrank regardless of source order — but a declaration that
+ * matches the SPAN directly always wins over a value merely inherited
+ * from its ancestor, no specificity contest involved, so setting it
+ * here sidesteps that fight entirely instead of re-fighting it. */
+.pl-table__cell--name {
+	width: 100%;
+	min-width: 200px;
+}
+
+.pl-table__name-text {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	white-space: normal;
+	line-height: 1.35;
+}
+
+/* Sticky columns: the fallback for whatever horizontal scroll survives
+ * the fixed-width numeric columns + name's own min-width on a narrow
+ * admin viewport (WP's own sidebar menu alone eats ~160-190px). Name
+ * stays pinned left (always know which row
+ * you're on), Net Profit stays pinned right (the number the table
+ * exists to answer) — only Units/Revenue/Cost/Margin scroll underneath.
+ * Each needs an EXPLICIT opaque background: a sticky cell with no
+ * background of its own lets the scrolling columns show through as they
+ * pass behind it, which looks like a rendering bug. The three states
+ * below (default/striped/hover) have to be repeated here because the
+ * <tr>'s own background does not reliably paint through a sticky child
+ * cell across browsers. */
+.pl-table__col--sticky-left,
+.pl-table__col--sticky-right {
+	position: sticky;
+	z-index: 1;
+	background: var(--pl-color-surface);
+}
+
+.pl-table__col--sticky-left {
+	left: 0;
+	box-shadow: 2px 0 4px rgba(18, 33, 46, 0.05);
+}
+
+.pl-table__col--sticky-right {
+	right: 0;
+	box-shadow: -2px 0 4px rgba(18, 33, 46, 0.05);
+}
+
+.pl-table thead .pl-table__col--sticky-left,
+.pl-table thead .pl-table__col--sticky-right {
+	z-index: 2;
+	background: var(--pl-color-surface);
+}
+
+.pl-table tbody tr:nth-child(even) .pl-table__col--sticky-left,
+.pl-table tbody tr:nth-child(even) .pl-table__col--sticky-right {
+	background: #fafbfc;
+}
+
+.pl-table tbody tr:hover .pl-table__col--sticky-left,
+.pl-table tbody tr:hover .pl-table__col--sticky-right {
+	background: #f0f7ff;
+}
+
+/* Same specificity "shape" as the nth-child rule above (one class, two
+ * type selectors, one pseudo-class-or-class each) on purpose — ties are
+ * broken by source order, and the totals row's own background has to
+ * win over "is this row even-numbered" regardless of how many products
+ * are on the current page. */
+.pl-table tbody tr.pl-table__totals .pl-table__col--sticky-left,
+.pl-table tbody tr.pl-table__totals .pl-table__col--sticky-right {
+	background: #fafbfc;
 }
 
 .pl-table tbody tr:nth-child(even) {
@@ -484,6 +831,64 @@
 	font-size: 13px;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
+	color: var(--pl-color-muted);
+}
+
+/* "No cost set" — replaces a profit/margin figure that would otherwise
+ * look trustworthy while actually being gross revenue with an implicit
+ * $0 cost. Neutral, not alarm-colored: a missing cost is missing data,
+ * not a loss (see CLAUDE.md — costs never get alarm colors either). */
+.pl-table__chip {
+	display: inline-block;
+	padding: 2px 8px;
+	font-size: 10px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: var(--pl-color-muted);
+	background: var(--pl-color-border-soft);
+	border: 1px solid var(--pl-color-border);
+	border-radius: 10px;
+	white-space: nowrap;
+}
+
+.pl-table__empty {
+	padding: 32px 14px;
+	text-align: center;
+	font-family: var(--pl-font-sans);
+	color: var(--pl-color-muted);
+}
+
+.pl-table-card__pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	padding: 14px;
+	border-top: 1px solid var(--pl-color-border);
+}
+
+.pl-table-card__page-btn {
+	padding: 6px 12px;
+	font-size: 11px;
+	color: var(--pl-color-text);
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+	cursor: pointer;
+}
+
+.pl-table-card__page-btn:disabled {
+	color: var(--pl-color-muted);
+	opacity: 0.4;
+	cursor: default;
+}
+
+.pl-table-card__page-btn:hover:not(:disabled) {
+	background: var(--pl-color-border-soft);
+}
+
+.pl-table-card__page-indicator {
+	font-size: 11px;
 	color: var(--pl-color-muted);
 }
 
@@ -709,6 +1114,79 @@
 
 .pl-empty__link:hover {
 	color: var(--pl-color-text);
+}
+
+/* ── Notice states (error, no-orders) ─────────────────────────────────── */
+
+.pl-notice-wrap {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 24px;
+}
+
+.pl-notice__card {
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
+	padding: 40px 44px 36px;
+	width: 420px;
+	max-width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	box-shadow: 0 1px 4px rgba(18, 33, 46, 0.06);
+}
+
+.pl-notice__icon {
+	margin-bottom: 18px;
+}
+
+.pl-notice__title {
+	font-family: var(--pl-font-sans);
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--pl-color-text);
+	margin: 0 0 10px;
+}
+
+.pl-notice__copy {
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	color: var(--pl-color-muted);
+	line-height: 1.6;
+	margin: 0 0 24px;
+	max-width: 320px;
+}
+
+.pl-notice__cta {
+	width: 100%;
+	font-family: var(--pl-font-mono);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--pl-color-text);
+	background: var(--pl-color-accent);
+	border: 1px solid var(--pl-color-accent);
+	border-radius: var(--pl-radius);
+	padding: 10px 20px;
+	cursor: pointer;
+	transition: opacity 0.15s, background 0.15s;
+}
+
+.pl-notice__cta:hover {
+	background: var(--pl-color-accent-strong);
+}
+
+.pl-notice__cta--danger {
+	color: var(--pl-color-surface);
+	background: var(--pl-color-loss);
+	border-color: var(--pl-color-loss);
+}
+
+.pl-notice__cta--danger:hover {
+	background: var(--pl-color-loss);
+	opacity: 0.9;
 }
 
 /* ── Loading skeleton ──────────────────────────────────────────────────── */

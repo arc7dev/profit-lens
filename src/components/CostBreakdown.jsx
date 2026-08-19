@@ -1,7 +1,12 @@
+import { formatCurrency } from '../utils/currency';
+
 /**
  * Cost breakdown as horizontal bars. Entries flagged is_estimated (e.g.
  * gateway fees without an exact figure) carry an "est." label — it's a
  * cost, not an alarm, so it doesn't use the loss color.
+ *
+ * Amounts always render with 2 decimals (unlike the KPI cards, which round
+ * to the dollar) — this is a reconciliation view, not a headline figure.
  *
  * @param {Object}                                                              props
  * @param {Array<{key:string,label:string,amount:number,is_estimated:boolean}>} props.items
@@ -32,7 +37,7 @@ export default function CostBreakdown( { items } ) {
 									) }
 								</span>
 								<span className="pl-cost-item__amount pl-mono">
-									${ item.amount.toLocaleString() }
+									{ formatCurrency( item.amount, 2 ) }
 								</span>
 							</div>
 							<div className="pl-cost-item__track">
@@ -52,7 +57,7 @@ export default function CostBreakdown( { items } ) {
 			<div className="pl-cost-total">
 				<span className="pl-cost-total__label">Total</span>
 				<span className="pl-cost-total__amount pl-mono">
-					${ total.toLocaleString() }
+					{ formatCurrency( total, 2 ) }
 				</span>
 			</div>
 		</div>
