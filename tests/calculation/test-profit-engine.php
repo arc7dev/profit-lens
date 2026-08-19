@@ -199,37 +199,32 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 	}
 
 	/**
-	 * KNOWN-LIMITATION CHARACTERIZATION, not a desired behavior — read this
-	 * before "fixing" it. Cost is NOT versioned per order: resolve_line_items()
-	 * always reads the product's CURRENT get_cogs_total_value() (a pure
-	 * function of the product's present state — confirmed against
-	 * WooCommerce's own abstract-wc-product.php: no date/order parameter
-	 * anywhere in that call chain), evaluated once per product_id and
-	 * applied uniformly to every line of that product a single aggregate()
-	 * pass touches. So unsetting a product's cost between two of its own
-	 * orders does NOT produce a 50/50 split here — by the time aggregate()
-	 * runs (after both orders exist), the product has no cost at all, and
-	 * BOTH lines come back uncovered, not just the second one.
+	 * FIXED as of issue #7 (github.com/arc7dev/profit-lens/issues/7) — this
+	 * test used to characterize the opposite, known-bad behavior (see git
+	 * history for the original KNOWN-LIMITATION version of this test, and
+	 * its own docblock's explicit instruction: "if cost resolution is ever
+	 * changed to snapshot/version cost per order, THIS TEST WILL START
+	 * FAILING (0.0 will become 50.0) — that is the fix working, not a
+	 * regression"). It now asserts the fix.
 	 *
-	 * This is a real product limitation, not just a test quirk: it means
-	 * editing a product's cost today retroactively changes profit for every
-	 * PAST period too, not only future orders — tracked as
-	 * github.com/arc7dev/profit-lens/issues/7 and noted in the parent
-	 * project's CLAUDE.md. This test exists to characterize today's actual
-	 * behavior, not to assert it's correct.
+	 * ProfitLens_Cost_Snapshotter freezes each line's resolved unit cost as
+	 * order item meta the moment an order first becomes "counted" — see
+	 * ProfitLens_Cost_Component_Product::write_snapshot(). Both orders here
+	 * are created directly in 'completed' status (create_order()'s
+	 * default), which — confirmed against WooCommerce core — means neither
+	 * one ever passes through a status TRANSITION on an already-read
+	 * object, so it's woocommerce_new_order, not
+	 * woocommerce_order_status_changed, that fires the snapshot for each.
+	 * That's exactly the "order born already in a counted status" case
+	 * ProfitLens_Cost_Snapshotter has to cover on its own — see its
+	 * class docblock.
 	 *
-	 * If cost resolution is ever changed to snapshot/version cost per order
-	 * (fixing the limitation above), THIS TEST WILL START FAILING (0.0 will
-	 * become 50.0) — that is the fix working, not a regression. Update the
-	 * assertion then; don't "restore" it to 0.0. Separately confirmed this
-	 * isn't a contrived edge case: checked revenue_covered_pct across all
-	 * 1,297 products that have ever sold in the seeded dataset (full
-	 * history) — 154 at 0%, 1,143 at 100%, zero anywhere in between. A
-	 * single product's coverage is structurally binary today; ProductTable
-	 * only needs the two states has_cost already covers, not a third
-	 * "partial" tier.
+	 * The unset happens strictly BETWEEN the two create_order() calls, so
+	 * order 1 snapshots the real $5.00 cost and order 2 snapshots
+	 * SNAPSHOT_UNKNOWN — a real 50/50 split, not the all-or-nothing result
+	 * the product's current state alone would give.
 	 */
-	public function test_cost_resolution_is_not_versioned_per_order() {
+	public function test_cost_resolution_is_now_versioned_per_order_via_snapshot() {
 		$product = $this->create_product( 5.0, 20.0 );
 		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 20.0 ) ) );
 
@@ -244,10 +239,12 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 		list( $after, $before ) = $this->range();
 		$products = $this->engine->get_summary( $after, $before )['products'];
 
-		// Both orders' revenue counts as uncovered — not just the second
-		// one — because the product has no cost by the time aggregate()
-		// runs, and that single current state applies to every line.
-		$this->assertEquals( 0.0, $products[0]['revenue_covered_pct'] );
+		// Order 1's line is frozen at the $5.00 cost that was live when it
+		// was snapshotted — order 2's line, snapshotted after the cost was
+		// removed, is not. Exactly half this product's period revenue is
+		// covered, matching the per-order split rather than the product's
+		// single current state.
+		$this->assertEquals( 50.0, $products[0]['revenue_covered_pct'] );
 		$this->assertFalse( $products[0]['has_cost'] );
 	}
 
