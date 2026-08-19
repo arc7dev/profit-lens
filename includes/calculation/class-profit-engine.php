@@ -56,6 +56,18 @@ class ProfitLens_Profit_Engine {
 	 *
 	 * @return self
 	 */
+	/**
+	 * Exposes the wired product-cost component so hook glue (e.g.
+	 * ProfitLens_Cost_Snapshotter) can reuse the exact same cost
+	 * resolution/source wiring create_default() decided, instead of
+	 * duplicating that decision in a second place.
+	 *
+	 * @return ProfitLens_Cost_Component_Product
+	 */
+	public function get_product_cost_component() {
+		return $this->product_cost;
+	}
+
 	public static function create_default() {
 		$cost_source = new ProfitLens_Cost_Source_Cogs();
 
@@ -180,7 +192,7 @@ class ProfitLens_Profit_Engine {
 	/**
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
-	 * @return array{products_with_cost:int,products_total:int,pct:float,revenue_covered_pct:float,revenue_uncovered:float}
+	 * @return array{products_with_cost:int,products_total:int,pct:float,revenue_covered_pct:float,revenue_uncovered:float,snapshot_covered_pct:float}
 	 */
 	public function get_cost_coverage( DateTimeInterface $after, DateTimeInterface $before ) {
 		return $this->format_cost_coverage( $this->aggregate( $after, $before ) );
@@ -283,12 +295,13 @@ class ProfitLens_Profit_Engine {
 	private function aggregate( DateTimeInterface $after, DateTimeInterface $before, $lite = false ) {
 		$orders = $this->get_counted_orders( $after, $before );
 
-		$revenue           = 0.0;
-		$cost_totals        = array();
-		$chart_by_day       = array();
-		$products           = array();
-		$revenue_covered    = 0.0;
-		$revenue_uncovered  = 0.0;
+		$revenue                = 0.0;
+		$cost_totals             = array();
+		$chart_by_day            = array();
+		$products                = array();
+		$revenue_covered         = 0.0;
+		$revenue_uncovered       = 0.0;
+		$revenue_snapshot_backed = 0.0;
 
 		foreach ( $this->all_components() as $component ) {
 			$cost_totals[ $component->get_key() ] = 0.0;
@@ -357,6 +370,15 @@ class ProfitLens_Profit_Engine {
 
 				$product_id = $line['product']->get_id();
 
+				// Scoped identically to revenue_covered/revenue_uncovered
+				// just below (same "has a product" gate, same net_revenue
+				// figure) so snapshot_covered_pct shares the exact same
+				// denominator as revenue_covered_pct — both describe a
+				// fraction of the same attributable-revenue universe.
+				if ( $line['from_snapshot'] ) {
+					$revenue_snapshot_backed += $line['net_revenue'];
+				}
+
 				if ( ! isset( $products[ $product_id ] ) ) {
 					$products[ $product_id ] = array(
 						'id'                => $product_id,
@@ -421,13 +443,14 @@ class ProfitLens_Profit_Engine {
 		}
 
 		return array(
-			'orders'            => $orders,
-			'revenue'           => $revenue,
-			'cost_totals'       => $cost_totals,
-			'chart_by_day'      => $chart_by_day,
-			'products'          => $products,
-			'revenue_covered'   => $revenue_covered,
-			'revenue_uncovered' => $revenue_uncovered,
+			'orders'                  => $orders,
+			'revenue'                 => $revenue,
+			'cost_totals'             => $cost_totals,
+			'chart_by_day'            => $chart_by_day,
+			'products'                => $products,
+			'revenue_covered'         => $revenue_covered,
+			'revenue_uncovered'       => $revenue_uncovered,
+			'revenue_snapshot_backed' => $revenue_snapshot_backed,
 		);
 	}
 
@@ -595,15 +618,26 @@ class ProfitLens_Profit_Engine {
 		$revenue_total = $data['revenue_covered'] + $data['revenue_uncovered'];
 
 		return array(
-			'products_with_cost'  => $catalog['with_cost'],
-			'products_total'      => $catalog['total'],
-			'pct'                 => $catalog['total'] > 0
+			'products_with_cost'   => $catalog['with_cost'],
+			'products_total'       => $catalog['total'],
+			'pct'                  => $catalog['total'] > 0
 				? round( ( $catalog['with_cost'] / $catalog['total'] ) * 100, 1 )
 				: 0.0,
-			'revenue_covered_pct' => $revenue_total > 0.0
+			'revenue_covered_pct'  => $revenue_total > 0.0
 				? round( ( $data['revenue_covered'] / $revenue_total ) * 100, 1 )
 				: 100.0,
-			'revenue_uncovered'   => round( $data['revenue_uncovered'], 2 ),
+			'revenue_uncovered'    => round( $data['revenue_uncovered'], 2 ),
+			// What fraction of this same revenue is backed by a frozen
+			// per-order cost snapshot (issue #7) rather than the
+			// product's current, editable cost — i.e. how much of this
+			// period is immune to a future COGS edit rewriting it. Orders
+			// placed before this feature shipped have no snapshot (no
+			// forced backfill — see CLAUDE.md) and count against this
+			// figure exactly like an uncovered product does against
+			// revenue_covered_pct: visibly, not silently.
+			'snapshot_covered_pct' => $revenue_total > 0.0
+				? round( ( $data['revenue_snapshot_backed'] / $revenue_total ) * 100, 1 )
+				: 100.0,
 		);
 	}
 
