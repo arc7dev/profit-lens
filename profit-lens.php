@@ -25,12 +25,12 @@ defined( 'ABSPATH' ) || exit;
 
 // ── WooCommerce feature compatibility ───────────────────────────────────────
 // custom_order_tables (HPOS): true. The calculation engine (includes/
-// calculation/) is all documented stubs at this stage — nothing in this
-// plugin queries wp_posts/wp_postmeta for order data or assumes orders live
-// there. The one $wpdb query in uninstall.php targets wp_options, not
-// orders. When the engine gets real logic, it must keep going exclusively
+// calculation/) is fully implemented (Fase A) and reads orders exclusively
 // through the WooCommerce CRUD API (wc_get_orders(), $order->get_*()) —
-// this declaration is a promise, not a formality, and has to stay true.
+// nothing in this plugin queries wp_posts/wp_postmeta for order data or
+// assumes orders live there. The one $wpdb query in uninstall.php targets
+// wp_options, not orders. This declaration is a promise, not a formality,
+// and has to stay true.
 //
 // cart_checkout_blocks: true. Profit Lens is read-only analytics; it has no
 // cart or checkout code at all (verified: the plugin doesn't register any
