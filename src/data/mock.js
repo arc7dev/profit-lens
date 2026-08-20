@@ -1,9 +1,12 @@
 /**
  * Example data with the same shape returned by GET /profit-lens/v1/summary
  * (see ProfitLens_REST_Controller::build_ready_response() in PHP — same
- * numbers, same shape). Used while the calculation engine doesn't exist
- * yet; once useSummary() replaces this file with the real fetch, the
- * components don't change.
+ * numbers, same shape). The calculation engine is real; useSummary() fetches
+ * it and this file is no longer on that path. It's only reachable through
+ * Dashboard.jsx's dev-only mock switcher (MOCK_OVERRIDES), gated behind
+ * isDebug (window.profitLensData.isDebug — itself WP_DEBUG && PROFITLENS_DEV
+ * server-side, see class-assets.php) — visual QA/screenshots for a given
+ * dashboard state without needing a real store in that state.
  */
 
 const PRODUCTS = [
