@@ -27,18 +27,20 @@ const RANGES = [
 ];
 
 // Forces a specific view with FAKE data (src/data/mock.js), for visual
-// QA/screenshots without needing a store actually in that state —
-// WP_DEBUG only, never active on load. Labeled deliberately as "mock",
-// not as if these buttons were a view of the real dashboard's current
-// state: an earlier version just said "ready"/"empty"/etc., which read
-// like a status indicator rather than a data override, and it's easy to
-// forget one is still active and mistake fake numbers for real ones.
+// QA/screenshots without needing a store actually in that state — gated
+// behind isDebug (WP_DEBUG *and* PROFITLENS_DEV, see class-assets.php;
+// WP_DEBUG alone isn't enough, real stores run it for unrelated reasons),
+// never active on load. Labeled deliberately as "mock", not as if these
+// buttons were a view of the real dashboard's current state: an earlier
+// version just said "ready"/"empty"/etc., which read like a status
+// indicator rather than a data override, and it's easy to forget one is
+// still active and mistake fake numbers for real ones.
 const MOCK_OVERRIDES = [ 'ready', 'empty', 'loading', 'error' ];
 
 function MockOverrideSwitcher( { override, onChange } ) {
 	return (
 		<div className="pl-dev-switcher">
-			<span>⚠ Force fake data (WP_DEBUG only):</span>
+			<span>⚠ Force fake data (dev only):</span>
 			{ MOCK_OVERRIDES.map( ( s ) => (
 				<button
 					key={ s }
@@ -70,7 +72,7 @@ export default function Dashboard() {
 
 	// Always called (rules of hooks) — its result is simply unused while a
 	// mock override is active. The background fetch it triggers is
-	// harmless in that case; this is a WP_DEBUG-only affordance, not
+	// harmless in that case; this is a dev-only affordance (isDebug), not
 	// something a real user ever hits.
 	const live = useSummary( rangeKey, customRange );
 
