@@ -46,9 +46,10 @@ should be installable immediately, without asking the end user to run
 Practical consequence: **if you change anything under `src/`, run
 `npm run build` and commit the result together with your source change.**
 A PR that touches `src/` without a matching `build/` update is out of
-sync with what ships. If this project ever needs a hands-off release
-process, the natural next step is a GitHub Action that rebuilds on tag and
-publishes to the WordPress.org SVN repo — not implemented yet.
+sync with what ships — a GitHub Actions workflow (`build-check.yml`) now
+catches this automatically, see Development below. A full hands-off
+release process (a GitHub Action that rebuilds on tag and publishes to
+the WordPress.org SVN repo) is still not implemented.
 
 `node_modules/` and `vendor/` are gitignored as usual — pure tooling,
 never touched by WordPress at runtime.
@@ -61,26 +62,42 @@ npm run lint:js     # eslint (@wordpress/scripts config)
 npm run lint:css    # stylelint
 npm run format      # prettier, writes in place
 composer test        # PHPUnit (needs the WP test suite, see tests/bootstrap.php)
-composer lint         # PHPCS (WordPress Coding Standards)
+composer lint         # PHPCS (WordPress Coding Standards ruleset not configured yet — falls back to PEAR defaults)
 ```
+
+PRs are checked automatically via GitHub Actions (PHPUnit + build sync).
 
 ## Architecture
 
 - **PHP does all the calculation**, server-side. React only renders data
   the backend already computed — see `includes/class-rest-controller.php`
   for the REST contract (`GET /wp-json/profit-lens/v1/summary`).
-- **`includes/calculation/`** is the calculation engine: a
-  `ProfitLens_Cost_Source` interface (one cost source per plugin —
-  WooCommerce's native COGS field for now) feeding
-  `ProfitLens_Profit_Engine`. Pro cost sources (ad spend) plug into the
-  same interface without touching this repo.
+- **`includes/calculation/`** is the calculation engine, split into two
+  interfaces: `ProfitLens_Cost_Source` (what does a PRODUCT cost —
+  WooCommerce's native COGS field is the one Free implementation) and
+  `ProfitLens_Cost_Component` (how much does a concept subtract from an
+  ORDER's profit — four Free implementations: Product, GatewayFees,
+  Shipping, Refunds). Both feed `ProfitLens_Profit_Engine`. Pro adds a
+  fifth cost source/component the same way, without touching the rest of
+  the engine.
+- **`includes/class-cost-snapshotter.php`** (`ProfitLens_Cost_Snapshotter`)
+  freezes each order line's resolved product cost as order item meta
+  (`_profitlens_snapshot_unit_cost`) the first time an order reaches
+  completed/processing, so editing a product's cost later doesn't
+  retroactively rewrite past periods' profit. Hooked on both
+  `woocommerce_new_order` and `woocommerce_order_status_changed` — an
+  order created directly in a "counted" status only fires the former.
+  `cost_coverage.snapshot_covered_pct` in the REST response exposes what
+  fraction of a period is protected by a snapshot vs. still resolved live.
 - **No PSR-4 autoload at runtime.** Class files follow WordPress-core
   naming (`class-admin.php`, not `Admin.php`), loaded by a small
   `spl_autoload_register()` map in `class-plugin.php`. Composer's
   `classmap` autoload exists only for PHPUnit.
-- **`src/data/mock.js`** mirrors the exact shape of the REST response.
-  Swapping it for a real `apiFetch` call (see the documented stub in
-  `src/hooks/useSummary.js`) shouldn't require touching any component.
+- **`src/hooks/useSummary.js`** fetches the real REST endpoint via
+  `@wordpress/api-fetch`. **`src/data/mock.js`** still mirrors that
+  response's shape, but only for `Dashboard.jsx`'s dev-only mock switcher
+  (gated by `WP_DEBUG` + `PROFITLENS_DEV`, see `class-assets.php`) — it's
+  not on the real data path.
 
 ## Free vs. Pro
 
