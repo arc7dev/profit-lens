@@ -62,7 +62,7 @@ npm run lint:js     # eslint (@wordpress/scripts config)
 npm run lint:css    # stylelint
 npm run format      # prettier, writes in place
 composer test        # PHPUnit (needs the WP test suite, see tests/bootstrap.php)
-composer lint         # PHPCS (WordPress Coding Standards ruleset not configured yet — falls back to PEAR defaults)
+composer lint         # PHPCS (WordPress-Core ruleset, see phpcs.xml)
 ```
 
 PRs are checked automatically via GitHub Actions (PHPUnit + build sync).
