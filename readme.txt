@@ -6,7 +6,7 @@ Tested up to: 6.7
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.3
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,11 @@ a glance how much to trust the number instead of assuming it's complete.
 1. Dashboard — net profit, cost breakdown, and profit by product.
 
 == Changelog ==
+
+= 0.2.1 =
+* Fix: rebuild compiled bundle to include snapshot cost disclosure UI (was missing from 0.2.0 build).
+* Add PROFITLENS_DEV constant as second gate for dev tools — WP_DEBUG alone is not a reliable proxy for plugin development mode.
+* Add .distignore to exclude dev/build files from WordPress.org package.
 
 = 0.2.0 =
 * Real profit calculation engine: net profit/margin from WooCommerce COGS,
