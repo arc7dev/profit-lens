@@ -1,0 +1,15 @@
+tests/
+phpunit.xml
+composer.json
+composer.lock
+package.json
+package-lock.json
+bin/
+docs/
+.editorconfig
+.gitignore
+README.md
+src/
+node_modules/
+vendor/
+.distignore

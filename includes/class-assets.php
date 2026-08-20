@@ -79,8 +79,14 @@ class ProfitLens_Assets {
 				'thousandSeparator' => wc_get_price_thousand_separator(),
 				'currencyPosition'  => get_option( 'woocommerce_currency_pos', 'left' ),
 				// The dev state switcher (Dashboard.jsx) only shows up
-				// when this is true — never on a production site.
-				'isDebug'           => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				// when this is true. Double-gated on purpose: WP_DEBUG alone
+				// isn't a reliable "this is a dev install" signal — plenty of
+				// real stores run it in production for logging/other plugins'
+				// debugging without meaning to expose this plugin's own dev
+				// tools. PROFITLENS_DEV is a second, plugin-specific constant
+				// a developer defines in their own wp-config.php (see
+				// CLAUDE.md) — both have to be true.
+				'isDebug'           => defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'PROFITLENS_DEV' ) && PROFITLENS_DEV,
 				// "Today", computed in the site's configured timezone —
 				// the same current_datetime() the REST controller itself
 				// anchors named ranges to (class-rest-controller.php's
