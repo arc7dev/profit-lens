@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<ruleset name="Profit Lens">
+	<description>Coding standard for the Profit Lens WordPress plugin.</description>
+
+	<!-- Scope: only the PHP this plugin actually ships to users.
+	     tests/ follows the WP core test suite's own conventions (not this
+	     ruleset's concern), and node_modules/vendor/build aren't this
+	     project's code at all. -->
+	<file>includes</file>
+	<file>profit-lens.php</file>
+
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/build/*</exclude-pattern>
+	<exclude-pattern>*/tests/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
+	<rule ref="WordPress-Core">
+		<!-- This repo deliberately names class files WordPress-core style
+		     (class-cost-snapshotter.php, not CostSnapshotter.php) — see
+		     class-plugin.php's own $class_map and the "No PSR-4 autoload
+		     at runtime" note in README.md. WordPress.Files.FileName
+		     expects the file name to match the class name it defines
+		     (PSR-4-ish), which would flag every file in includes/ for a
+		     naming convention this project intentionally isn't using. -->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+</ruleset>

@@ -1,0 +1,73 @@
+name: PHPUnit
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+jobs:
+  test:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: profitlens_test
+          MYSQL_USER: profitlens
+          MYSQL_PASSWORD: profitlens_dev_pw
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3306:3306
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Download WordPress (latest)
+        run: curl -sL https://wordpress.org/latest.tar.gz | tar xz -C /tmp
+
+      - name: Cache WooCommerce 11.0.1
+        uses: actions/cache@v4
+        id: cache-wc
+        with:
+          path: /tmp/woocommerce.zip
+          key: woocommerce-11.0.1
+
+      - name: Download WooCommerce 11.0.1
+        if: steps.cache-wc.outputs.cache-hit != 'true'
+        run: |
+          curl -sL \
+            https://downloads.wordpress.org/plugin/woocommerce.11.0.1.zip \
+            -o /tmp/woocommerce.zip
+
+      - name: Install WooCommerce
+        run: unzip -q /tmp/woocommerce.zip -d /tmp/wordpress/wp-content/plugins/
+
+      - name: Copy wp-tests-config for CI
+        run: cp tests/wp-tests-config.ci.php tests/wp-tests-config.php
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --testdox
