@@ -62,7 +62,7 @@ npm run lint:js     # eslint (@wordpress/scripts config)
 npm run lint:css    # stylelint
 npm run format      # prettier, writes in place
 composer test        # PHPUnit (needs the WP test suite, see tests/bootstrap.php)
-composer lint         # PHPCS (WordPress Coding Standards ruleset not configured yet — falls back to PEAR defaults)
+composer lint         # PHPCS (WordPress-Core ruleset, see phpcs.xml)
 ```
 
 PRs are checked automatically via GitHub Actions (PHPUnit + build sync).
@@ -111,9 +111,13 @@ a Meta Ads or Google Ads account and is sold and served from
 
 Issues and PRs welcome. Keep the `profitlens_` / `ProfitLens_` prefix on
 any new function or class, and make sure `npm run lint:js`,
-`npm run lint:css`, and `php -l` pass before opening a PR. If your change
-touches `src/`, include the rebuilt `build/` in the same commit (see
-above).
+`npm run lint:css`, `php -l`, and `composer lint` (PHPCS against the
+WordPress Coding Standards ruleset in `phpcs.xml`) pass before opening a
+PR. If your change touches `src/`, include the rebuilt `build/` in the
+same commit (see above).
+
+PRs are also checked automatically via GitHub Actions — PHPUnit and the
+build sync check.
 
 ## License
 
