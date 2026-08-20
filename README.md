@@ -111,9 +111,13 @@ a Meta Ads or Google Ads account and is sold and served from
 
 Issues and PRs welcome. Keep the `profitlens_` / `ProfitLens_` prefix on
 any new function or class, and make sure `npm run lint:js`,
-`npm run lint:css`, and `php -l` pass before opening a PR. If your change
-touches `src/`, include the rebuilt `build/` in the same commit (see
-above).
+`npm run lint:css`, `php -l`, and `composer lint` (PHPCS against the
+WordPress Coding Standards ruleset in `phpcs.xml`) pass before opening a
+PR. If your change touches `src/`, include the rebuilt `build/` in the
+same commit (see above).
+
+PRs are also checked automatically via GitHub Actions — PHPUnit and the
+build sync check.
 
 ## License
 
