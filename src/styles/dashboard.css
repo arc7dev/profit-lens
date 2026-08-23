@@ -589,21 +589,26 @@
 }
 
 .pl-table-card__export {
-	font-family: var(--pl-font-mono);
-	font-size: 11px;
-	color: var(--pl-color-muted);
-	text-decoration: none;
-	border-bottom: 1px solid #d0d9e0;
-	background: none;
-	border-top: none;
-	border-left: none;
-	border-right: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 12px;
+	font-family: var(--pl-font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--pl-color-profit);
+	background: transparent;
+	border: 1px solid var(--pl-color-accent-strong);
+	border-radius: var(--pl-radius);
 	cursor: pointer;
-	padding: 0;
+	text-decoration: none;
+	transition: background 0.15s, border-color 0.15s;
+	white-space: nowrap;
 }
 
 .pl-table-card__export:hover {
-	color: var(--pl-color-text);
+	background: var(--pl-color-accent-wash);
+	border-color: var(--pl-color-profit);
 }
 
 .pl-table-card__count {

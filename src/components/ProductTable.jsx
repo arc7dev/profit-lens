@@ -285,10 +285,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 				</div>
 
 				<div className="pl-table-card__actions">
-					<button
-						type="button"
-						className="pl-table-card__export pl-mono"
-					>
+					<button type="button" className="pl-table-card__export">
 						Export CSV
 					</button>
 					<div className="pl-table-card__count pl-mono">
