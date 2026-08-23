@@ -90,6 +90,16 @@
 
 .pl-custom-range__popover {
 	padding: 16px;
+
+	/* Re-theme @wordpress/components to match the plugin palette: DatePicker
+	   and Button variant="primary" both inherit --wp-admin-theme-color from
+	   the WP admin page, which the plugin's own tokens (tokens.css, scoped
+	   to .profitlens-root) don't override — that variable lives on the
+	   admin page itself, not inside this plugin's own DOM scope. Scoped to
+	   this popover specifically (issue #17) so only the picker calendar and
+	   its Apply button are re-themed, not the entire WP admin. */
+	--wp-admin-theme-color: #1f8a5b; /* --pl-color-profit */
+	--wp-admin-theme-color--rgb: 31, 138, 91;
 }
 
 .pl-custom-range__calendars {
