@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from '@wordpress/element';
 
 import { formatCurrency } from '../utils/currency';
+import ProUpgradeModal from './ProUpgradeModal';
 
 // Fixed pixel widths for the five NUMERIC columns only — name is
 // deliberately left unset here and instead gets `width: 100%` in CSS
@@ -162,6 +163,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 	const [ sortDir, setSortDir ] = useState( 'desc' );
 	const [ search, setSearch ] = useState( '' );
 	const [ page, setPage ] = useState( 0 );
+	const [ showProModal, setShowProModal ] = useState( false );
 	const searchInputRef = useRef( null );
 
 	function handleSort( key ) {
@@ -287,9 +289,13 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 				<div className="pl-table-card__actions">
 					<button
 						type="button"
-						className="pl-table-card__export pl-mono"
+						className="pl-pro-chip"
+						onClick={ () => setShowProModal( true ) }
 					>
-						Export CSV
+						<span className="pl-pro-chip__label">
+							Export CSV
+						</span>
+						<span className="pl-pro-chip__badge">PRO</span>
 					</button>
 					<div className="pl-table-card__count pl-mono">
 						Showing { rangeStart }–{ rangeEnd } of { sorted.length }{ ' ' }
@@ -431,6 +437,12 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 					</button>
 				</div>
 			) }
+
+			<ProUpgradeModal
+				isOpen={ showProModal }
+				onClose={ () => setShowProModal( false ) }
+				feature="Export CSV"
+			/>
 		</div>
 	);
 }

@@ -588,22 +588,42 @@
 	flex-shrink: 0;
 }
 
-.pl-table-card__export {
-	font-family: var(--pl-font-mono);
-	font-size: 11px;
-	color: var(--pl-color-muted);
-	text-decoration: none;
-	border-bottom: 1px solid #d0d9e0;
-	background: none;
-	border-top: none;
-	border-left: none;
-	border-right: none;
+/* Export CSV — Pro chip. Not implemented in Free (the button was inert
+   before this, no working export ever shipped), launched as Pro-only
+   from the start — see ProUpgradeModal.jsx's docblock for why that's not
+   the same as gating already-implemented functionality. */
+.pl-pro-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: transparent;
+	border: 1px solid var(--pl-color-border);
+	border-radius: var(--pl-radius);
 	cursor: pointer;
-	padding: 0;
+	font-family: var(--pl-font-sans);
+	font-size: 12px;
+	color: var(--pl-color-muted);
+	transition: border-color 0.15s, color 0.15s;
 }
 
-.pl-table-card__export:hover {
+.pl-pro-chip:hover {
+	border-color: var(--pl-color-accent-strong);
 	color: var(--pl-color-text);
+}
+
+.pl-pro-chip__label {
+	font-weight: 400;
+}
+
+.pl-pro-chip__badge {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: var(--pl-color-profit);
+	background: var(--pl-color-accent-wash);
+	border-radius: 3px;
+	padding: 1px 5px;
 }
 
 .pl-table-card__count {
@@ -1285,5 +1305,133 @@
 .pl-dev-switcher__btn--active {
 	background: var(--pl-color-accent);
 	border-color: var(--pl-color-accent);
+	color: var(--pl-color-text);
+}
+
+/* ── ProUpgradeModal ──────────────────────────────────────────────────── */
+/* .pl-pro-modal is applied to @wordpress/components' Modal via its own
+   className prop, which lands on .components-modal__frame — the actual
+   dialog box — so max-width here constrains the visible modal, not some
+   inner wrapper.
+
+   Token redeclaration below is NOT a copy-paste accident — it's required.
+   Modal renders through a React portal straight onto <body>
+   (.components-modal__screen-overlay is a sibling of #wpwrap, not a
+   descendant of .profitlens-root — confirmed in the browser, not
+   assumed), so this subtree is outside where tokens.css scopes its
+   custom properties (.profitlens-root). Every var(--pl-*) used inside
+   this modal would otherwise resolve to nothing — confirmed too: before
+   this fix, .pl-pro-modal__cta-primary computed to a fully transparent,
+   borderless button (an invalid var() breaks the whole shorthand
+   declaration it's in, not just that one value) despite its CSS
+   correctly saying background: var(--pl-color-accent). Keep this list in
+   sync with tokens.css's values by hand if either changes — there's no
+   build step wiring them together automatically. */
+.pl-pro-modal {
+	--pl-color-text: #12212e;
+	--pl-color-muted: #64757f;
+	--pl-color-accent: #98dbaf;
+	--pl-color-accent-strong: #7ecf9a;
+	--pl-color-profit: #1f8a5b;
+	--pl-radius: 4px;
+	--pl-font-sans: "Inter", -apple-system, blinkmacsystemfont, "Segoe UI",
+		sans-serif;
+
+	max-width: 400px;
+}
+
+.pl-pro-modal .components-modal__content {
+	padding: 8px 32px 32px;
+	text-align: center;
+}
+
+.pl-pro-modal__icon {
+	display: block;
+	margin: 8px auto 16px;
+	color: var(--pl-color-profit);
+}
+
+.pl-pro-modal__title {
+	font-family: var(--pl-font-sans);
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--pl-color-text);
+	margin-bottom: 4px;
+}
+
+.pl-pro-modal__subtitle {
+	font-family: var(--pl-font-sans);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--pl-color-text);
+	margin-bottom: 12px;
+}
+
+.pl-pro-modal__copy {
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--pl-color-muted);
+	margin: 0 0 24px;
+}
+
+.pl-pro-modal__actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.pl-pro-modal__cta-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 10px 20px;
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--pl-color-text);
+	background: var(--pl-color-accent);
+	border: 1px solid var(--pl-color-accent);
+	border-radius: var(--pl-radius);
+	text-decoration: none;
+	cursor: pointer;
+	transition: background 0.15s;
+	box-sizing: border-box;
+}
+
+.pl-pro-modal__cta-primary:hover {
+	background: var(--pl-color-accent-strong);
+	/* Explicit, not redundant: WP admin's own CSS (both the base
+	   admin-color scheme CSS and this environment's "Modern" color
+	   scheme, colors.min.css) ships `a:hover { color: ... }` — an
+	   element+pseudo-class selector, specificity (0,0,1,1), which beats
+	   this component's own un-pseudo-classed `.pl-pro-modal__cta-primary
+	   { color: var(--pl-color-text) }` base rule (0,0,1,0) during the
+	   hover state specifically. Confirmed in the browser (not guessed):
+	   without this line, computed color on hover was rgb(24, 58, 214) —
+	   the "Modern" scheme's link-hover blue, coming from
+	   wp-admin/css/colors/modern/colors.min.css. This selector's own
+	   specificity (0,0,2,0) is what actually wins. */
+	color: var(--pl-color-text);
+}
+
+.pl-pro-modal__cta-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 10px 20px;
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--pl-color-muted);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	transition: color 0.15s;
+}
+
+.pl-pro-modal__cta-secondary:hover {
 	color: var(--pl-color-text);
 }

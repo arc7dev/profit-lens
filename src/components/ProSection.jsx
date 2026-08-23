@@ -1,3 +1,7 @@
+import { useState } from '@wordpress/element';
+
+import ProUpgradeModal from './ProUpgradeModal';
+
 /**
  * Blurred preview of the Pro metrics (ROAS by campaign, ad spend vs.
  * profit) with an upsell overlay. This is NOT gated functionality in the
@@ -17,6 +21,7 @@ const CAMPAIGNS = [
 
 export default function ProSection() {
 	const totalSpend = CAMPAIGNS.reduce( ( sum, c ) => sum + c.spend, 0 );
+	const [ showProModal, setShowProModal ] = useState( false );
 
 	return (
 		<div className="pl-card pl-pro">
@@ -70,15 +75,21 @@ export default function ProSection() {
 					See true profit per campaign once ad spend is subtracted —
 					so you know which channels actually pay.
 				</p>
-				<a
+				<button
+					type="button"
 					className="pl-pro__cta pl-mono"
-					href="https://arc7.dev/profit-lens/pro"
-					target="_blank"
-					rel="noreferrer"
+					data-pro-href="https://arc7.dev/profit-lens/pro"
+					onClick={ () => setShowProModal( true ) }
 				>
 					Connect Meta &amp; Google Ads
-				</a>
+				</button>
 			</div>
+
+			<ProUpgradeModal
+				isOpen={ showProModal }
+				onClose={ () => setShowProModal( false ) }
+				feature="Ads Integration"
+			/>
 		</div>
 	);
 }
