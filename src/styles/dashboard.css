@@ -1387,6 +1387,18 @@
 
 .pl-pro-modal__cta-primary:hover {
 	background: var(--pl-color-accent-strong);
+	/* Explicit, not redundant: WP admin's own CSS (both the base
+	   admin-color scheme CSS and this environment's "Modern" color
+	   scheme, colors.min.css) ships `a:hover { color: ... }` — an
+	   element+pseudo-class selector, specificity (0,0,1,1), which beats
+	   this component's own un-pseudo-classed `.pl-pro-modal__cta-primary
+	   { color: var(--pl-color-text) }` base rule (0,0,1,0) during the
+	   hover state specifically. Confirmed in the browser (not guessed):
+	   without this line, computed color on hover was rgb(24, 58, 214) —
+	   the "Modern" scheme's link-hover blue, coming from
+	   wp-admin/css/colors/modern/colors.min.css. This selector's own
+	   specificity (0,0,2,0) is what actually wins. */
+	color: var(--pl-color-text);
 }
 
 .pl-pro-modal__cta-secondary {
