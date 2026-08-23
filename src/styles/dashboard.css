@@ -97,9 +97,22 @@
 	   to .profitlens-root) don't override — that variable lives on the
 	   admin page itself, not inside this plugin's own DOM scope. Scoped to
 	   this popover specifically (issue #17) so only the picker calendar and
-	   its Apply button are re-themed, not the entire WP admin. */
+	   its Apply button are re-themed, not the entire WP admin.
+
+	   The base color alone isn't enough: Button's hover/active states read
+	   separate -darker-10/-darker-20 variables (see
+	   @wordpress/components/build-style/style.css), not a computed shade
+	   of --wp-admin-theme-color — leaving them unset falls through to
+	   Button's own hardcoded blue defaults (#2145e6 / #183ad6), which is
+	   exactly the "Apply button hover is still blue" bug. Darkened by the
+	   same ~10%/~20% steps WP core's own base→darker-10→darker-20 progression
+	   uses, applied to --pl-color-profit instead of their blue. */
 	--wp-admin-theme-color: #1f8a5b; /* --pl-color-profit */
 	--wp-admin-theme-color--rgb: 31, 138, 91;
+	--wp-admin-theme-color-darker-10: #1c7c52;
+	--wp-admin-theme-color-darker-10--rgb: 28, 124, 82;
+	--wp-admin-theme-color-darker-20: #196e49;
+	--wp-admin-theme-color-darker-20--rgb: 25, 110, 73;
 }
 
 .pl-custom-range__calendars {
