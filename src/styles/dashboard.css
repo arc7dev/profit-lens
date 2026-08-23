@@ -889,6 +889,10 @@
 	color: var(--pl-color-loss);
 }
 
+.pl-table td.pl-table__margin--none {
+	color: var(--pl-color-muted);
+}
+
 .pl-table__totals {
 	background: #fafbfc;
 	border-top: 2px solid var(--pl-color-border);

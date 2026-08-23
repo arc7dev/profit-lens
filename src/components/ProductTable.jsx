@@ -75,7 +75,10 @@ const PAGE_SIZE = 25;
 
 function marginClass( row ) {
 	if ( ! row.has_cost ) {
-		return '';
+		// No margin_pct to show — the cell renders '—' instead (see the
+		// row markup below). Muted, not the default text color, so it
+		// reads as "no data" rather than as a real (zero) value.
+		return 'pl-table__margin--none';
 	}
 
 	if ( row.profit < 0 ) {
