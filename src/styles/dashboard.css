@@ -71,10 +71,23 @@
 	outline-offset: -2px;
 }
 
+.pl-range__btn:hover {
+	color: var(--pl-color-text);
+	background: var(--pl-color-border-soft);
+}
+
 .pl-range__btn--active {
 	background: var(--pl-color-text);
 	color: #fff;
 	font-weight: 500;
+}
+
+/* .pl-range__btn:hover (0,0,2,0) outranks .pl-range__btn--active (0,0,1,0)
+   — without this, hovering the already-active button would flash it to
+   the idle-hover treatment above instead of staying put. */
+.pl-range__btn--active:hover {
+	background: var(--pl-color-text);
+	color: #fff;
 }
 
 /* Dropdown wraps its toggle in an extra element, breaking the plain
@@ -511,6 +524,19 @@
 	flex: 1 1 350px;
 	min-width: 350px;
 	max-width: 400px;
+
+	/* Same fix as .pl-custom-range__popover and .pl-pro-modal (see their
+	   comments for the full mechanism): WP admin's own
+	   input[type="search"]:focus rule sets outline-color: transparent and
+	   a box-shadow/border-color keyed to --wp-admin-theme-color, at
+	   specificity (0,0,2,1) — beats this project's
+	   .pl-table-card__search:focus-visible (0,0,2,0) outright, so the
+	   search box focus ring rendered WP admin's blue instead of the
+	   plugin's green. Redeclaring the variable here (not portaled, unlike
+	   Modal, so plain inheritance is enough) makes WP's own rule resolve
+	   to the plugin's color instead of fighting it on specificity. */
+	--wp-admin-theme-color: var(--pl-color-accent);
+	--wp-admin-theme-color--rgb: 152, 219, 175;
 }
 
 .pl-table-card__search-icon {
@@ -840,22 +866,31 @@
 	background: #f0f7ff;
 }
 
-.pl-table__profit--profit {
+/* `td` prefix is required, not decorative: .pl-table td (0,0,1,1) beats
+   a bare single-class modifier like .pl-table__profit--profit (0,0,1,0)
+   regardless of source order — these 4 rules were silently losing that
+   fight and never actually applying, confirmed via getComputedStyle()
+   returning --pl-color-text on every row instead of profit/loss. */
+.pl-table td.pl-table__profit--profit {
 	color: var(--pl-color-profit);
 	font-weight: 500;
 }
 
-.pl-table__profit--loss {
+.pl-table td.pl-table__profit--loss {
 	color: var(--pl-color-loss);
 	font-weight: 500;
 }
 
-.pl-table__margin--high {
+.pl-table td.pl-table__margin--high {
 	color: var(--pl-color-profit);
 }
 
-.pl-table__margin--loss {
+.pl-table td.pl-table__margin--loss {
 	color: var(--pl-color-loss);
+}
+
+.pl-table td.pl-table__margin--none {
+	color: var(--pl-color-muted);
 }
 
 .pl-table__totals {
