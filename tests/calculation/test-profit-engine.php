@@ -367,6 +367,85 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 	}
 
 	/**
+	 * Issue #17: aggregate() used to load every matching order into memory
+	 * at once (wc_get_orders(['limit' => -1])), which exhausted PHP's
+	 * memory_limit on a real 202-day/1,661-order range. Fixed by paging
+	 * through orders in get_batch_size()-sized chunks instead — this test
+	 * forces that multi-page path via the profitlens_aggregate_batch_size
+	 * filter (batch size 2, for 5 orders — 3 pages: 2+2+1) without
+	 * actually needing hundreds of real orders to exercise it, and asserts
+	 * the result is identical to what a single unbatched pass produces:
+	 * same revenue, same order count, same per-product totals. A
+	 * regression here (an order double-counted or dropped between pages)
+	 * would silently corrupt every range wide enough to span more than one
+	 * batch, not just unusually long ones — exactly the class of bug
+	 * CLAUDE.md's "never calibrate a threshold to pass" rule exists for,
+	 * so this compares against a hand-computed expectation, not against
+	 * whatever the unbatched code happened to produce before this fix.
+	 */
+	public function test_aggregate_paginates_without_dropping_or_double_counting_orders() {
+		$p1 = $this->create_product( 5.0, 20.0 );
+		$p2 = $this->create_product( 8.0, 30.0 );
+
+		// 5 orders, deliberately not a multiple of the batch size (2), so
+		// the last page is a partial one — the do/while loop's stopping
+		// condition (batch_count === batch_size) has to handle that
+		// correctly, not just the "every page is full" case.
+		$this->create_order( array( array( 'product' => $p1, 'qty' => 1, 'total' => 20.0 ) ) );
+		$this->create_order( array( array( 'product' => $p1, 'qty' => 2, 'total' => 40.0 ) ) );
+		$this->create_order( array( array( 'product' => $p2, 'qty' => 1, 'total' => 30.0 ) ) );
+		$this->create_order( array( array( 'product' => $p2, 'qty' => 3, 'total' => 90.0 ) ) );
+		$this->create_order( array( array( 'product' => $p1, 'qty' => 1, 'total' => 20.0 ) ) );
+
+		list( $after, $before ) = $this->range();
+
+		add_filter(
+			'profitlens_aggregate_batch_size',
+			function () {
+				return 2;
+			}
+		);
+
+		$summary = $this->engine->get_summary( $after, $before );
+
+		remove_all_filters( 'profitlens_aggregate_batch_size' );
+
+		// Hand-computed, not derived from the code under test: 20+40+30+90+20.
+		$this->assertEquals( 200.0, $summary['kpis']['revenue']['amount'] );
+		$this->assertSame( 5, $summary['kpis']['revenue']['orders_count'] );
+
+		$p1_profit = $this->engine->calculate_product_profit( $p1->get_id(), $after, $before );
+		$p2_profit = $this->engine->calculate_product_profit( $p2->get_id(), $after, $before );
+
+		// p1: qty 1+2+1 = 4 units, revenue 20+40+20 = 80.
+		$this->assertSame( 4, $p1_profit['units'] );
+		$this->assertEquals( 80.0, $p1_profit['revenue'] );
+
+		// p2: qty 1+3 = 4 units, revenue 30+90 = 120.
+		$this->assertSame( 4, $p2_profit['units'] );
+		$this->assertEquals( 120.0, $p2_profit['revenue'] );
+	}
+
+	/**
+	 * The do/while loop in aggregate() has to terminate for a range with
+	 * zero matching orders — an easy off-by-one to get wrong when
+	 * switching from "one query" to "query until a short page" (e.g. a
+	 * naive `do { ... } while ( count($orders) > 0 )` would query forever
+	 * once the range is empty, since an empty first page never satisfies
+	 * that particular condition... but would satisfy `count === $limit`
+	 * only by coincidence if $limit were ever 0). Exercises that
+	 * specifically with the default (non-filtered) batch size.
+	 */
+	public function test_aggregate_terminates_for_empty_range() {
+		list( $after, $before ) = $this->range();
+
+		$summary = $this->engine->get_summary( $after, $before );
+
+		$this->assertEquals( 0.0, $summary['kpis']['revenue']['amount'] );
+		$this->assertSame( 0, $summary['kpis']['revenue']['orders_count'] );
+	}
+
+	/**
 	 * @param array  $summary
 	 * @param string $key
 	 * @return float|null
