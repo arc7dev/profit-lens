@@ -24,19 +24,19 @@ class ProfitLens_Plugin {
 	 * @var array<string,string>
 	 */
 	private static $class_map = array(
-		'ProfitLens_Admin'                      => 'class-admin.php',
-		'ProfitLens_Assets'                     => 'class-assets.php',
+		'ProfitLens_Admin'                       => 'class-admin.php',
+		'ProfitLens_Assets'                      => 'class-assets.php',
 		'ProfitLens_REST_Controller'             => 'class-rest-controller.php',
 		'ProfitLens_CLI_Verify'                  => 'class-cli-verify.php',
 		'ProfitLens_Cost_Snapshotter'            => 'class-cost-snapshotter.php',
 		'ProfitLens_Profit_Engine'               => 'calculation/class-profit-engine.php',
 		'ProfitLens_Cost_Source'                 => 'calculation/interface-cost-source.php',
-		'ProfitLens_Cost_Source_Cogs'             => 'calculation/class-cost-source-cogs.php',
-		'ProfitLens_Cost_Component'               => 'calculation/interface-cost-component.php',
-		'ProfitLens_Cost_Component_Product'       => 'calculation/class-cost-component-product.php',
-		'ProfitLens_Cost_Component_Refunds'       => 'calculation/class-cost-component-refunds.php',
-		'ProfitLens_Cost_Component_Shipping'      => 'calculation/class-cost-component-shipping.php',
-		'ProfitLens_Cost_Component_Gateway_Fees'  => 'calculation/class-cost-component-gateway-fees.php',
+		'ProfitLens_Cost_Source_Cogs'            => 'calculation/class-cost-source-cogs.php',
+		'ProfitLens_Cost_Component'              => 'calculation/interface-cost-component.php',
+		'ProfitLens_Cost_Component_Product'      => 'calculation/class-cost-component-product.php',
+		'ProfitLens_Cost_Component_Refunds'      => 'calculation/class-cost-component-refunds.php',
+		'ProfitLens_Cost_Component_Shipping'     => 'calculation/class-cost-component-shipping.php',
+		'ProfitLens_Cost_Component_Gateway_Fees' => 'calculation/class-cost-component-gateway-fees.php',
 	);
 
 	/**
@@ -87,14 +87,14 @@ class ProfitLens_Plugin {
 	/**
 	 * Autoloader for the plugin's classes.
 	 *
-	 * @param string $class Requested class name.
+	 * @param string $class_name Requested class name.
 	 */
-	public function autoload( $class ) {
-		if ( ! isset( self::$class_map[ $class ] ) ) {
+	public function autoload( $class_name ) {
+		if ( ! isset( self::$class_map[ $class_name ] ) ) {
 			return;
 		}
 
-		require_once PROFITLENS_PLUGIN_DIR . 'includes/' . self::$class_map[ $class ];
+		require_once PROFITLENS_PLUGIN_DIR . 'includes/' . self::$class_map[ $class_name ];
 	}
 
 	/**

@@ -182,7 +182,11 @@ class ProfitLens_Cost_Source_Cogs implements ProfitLens_Cost_Source {
 			)
 		";
 
-		$products = $wpdb->get_row( $products_sql );
+		// $products_sql has no external input: every interpolated piece is a
+		// $wpdb table property or a hardcoded meta_key/taxonomy/slug literal
+		// defined a few lines above, never a request/user value. wpdb::prepare()
+		// has nothing to placeholder here.
+		$products = $wpdb->get_row( $products_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- see comment above, no external input.
 
 		// Variations: "has a cost" if their OWN meta says so, OR (when their
 		// own value is unset) the PARENT's own meta says so — the exact
@@ -210,7 +214,10 @@ class ProfitLens_Cost_Source_Cogs implements ProfitLens_Cost_Source {
 			AND v.post_status = 'publish'
 		";
 
-		$variations = $wpdb->get_row( $variations_sql );
+		// $variations_sql has no external input either, same reasoning as
+		// $products_sql above: table properties and hardcoded meta_key literals
+		// only, nothing user-supplied.
+		$variations = $wpdb->get_row( $variations_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- see comment above, no external input.
 
 		$total = (int) $products->total + (int) $variations->total;
 

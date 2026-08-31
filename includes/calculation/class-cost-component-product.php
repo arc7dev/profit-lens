@@ -108,7 +108,7 @@ class ProfitLens_Cost_Component_Product implements ProfitLens_Cost_Component {
 
 			$lines[ $item_id ] = array(
 				'item_id'         => $item_id,
-				'product'         => $product ?: null,
+				'product'         => $product ? $product : null,
 				'unit_cost'       => $unit_cost,
 				'net_qty'         => $net_qty,
 				'line_revenue'    => $line_revenue,
