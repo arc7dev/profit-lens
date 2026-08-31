@@ -2,7 +2,7 @@
 Contributors: arc7dev
 Tags: woocommerce, profit, analytics, cogs, dashboard
 Requires at least: 6.4
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.3
