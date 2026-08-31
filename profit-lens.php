@@ -11,7 +11,7 @@
  * Requires PHP:       7.4
  * Author:             Arc7
  * Author URI:         https://arc7.dev
- * License:            GPL v2 or later
+ * License:            GPLv2 or later
  * License URI:        https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:        profit-lens
  * Domain Path:        /languages
