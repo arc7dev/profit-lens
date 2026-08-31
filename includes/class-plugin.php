@@ -80,7 +80,6 @@ class ProfitLens_Plugin {
 			return;
 		}
 
-		$this->load_textdomain();
 		$this->init();
 	}
 
@@ -110,14 +109,6 @@ class ProfitLens_Plugin {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			ProfitLens_CLI_Verify::register();
 		}
-	}
-
-	private function load_textdomain() {
-		load_plugin_textdomain(
-			PROFITLENS_TEXT_DOMAIN,
-			false,
-			dirname( PROFITLENS_PLUGIN_BASENAME ) . '/languages'
-		);
 	}
 
 	/**
