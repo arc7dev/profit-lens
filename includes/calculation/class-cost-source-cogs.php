@@ -186,7 +186,7 @@ class ProfitLens_Cost_Source_Cogs implements ProfitLens_Cost_Source {
 		// $wpdb table property or a hardcoded meta_key/taxonomy/slug literal
 		// defined a few lines above, never a request/user value. wpdb::prepare()
 		// has nothing to placeholder here.
-		$products = $wpdb->get_row( $products_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- see comment above, no external input.
+		$products = $wpdb->get_row( $products_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- see comment above, no external input.
 
 		// Variations: "has a cost" if their OWN meta says so, OR (when their
 		// own value is unset) the PARENT's own meta says so — the exact
@@ -217,7 +217,7 @@ class ProfitLens_Cost_Source_Cogs implements ProfitLens_Cost_Source {
 		// $variations_sql has no external input either, same reasoning as
 		// $products_sql above: table properties and hardcoded meta_key literals
 		// only, nothing user-supplied.
-		$variations = $wpdb->get_row( $variations_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- see comment above, no external input.
+		$variations = $wpdb->get_row( $variations_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- see comment above, no external input.
 
 		$total = (int) $products->total + (int) $variations->total;
 

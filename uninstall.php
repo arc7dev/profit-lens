@@ -21,6 +21,7 @@ global $wpdb;
 delete_option( 'profitlens_settings' );
 
 // Engine cache transients, if any ever exist.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 $wpdb->query(
 	"DELETE FROM {$wpdb->options} WHERE option_name LIKE '\\_transient\\_profitlens\\_%' OR option_name LIKE '\\_transient\\_timeout\\_profitlens\\_%'"
 );

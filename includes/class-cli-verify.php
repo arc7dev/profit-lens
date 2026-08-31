@@ -256,6 +256,7 @@ class ProfitLens_CLI_Verify {
 		}
 
 		if ( $exclude_meta_key ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			$args['meta_key']     = $exclude_meta_key;
 			$args['meta_compare'] = 'NOT EXISTS';
 		}
