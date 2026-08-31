@@ -256,7 +256,7 @@ class ProfitLens_Profit_Engine {
 				'revenue'        => array(
 					'amount'       => $revenue,
 					'currency'     => $currency,
-					'orders_count' => count( $data['orders'] ),
+					'orders_count' => $data['orders_count'],
 				),
 				'total_costs'    => array(
 					'amount'   => $total_cost,
@@ -281,6 +281,13 @@ class ProfitLens_Profit_Engine {
 	// -----------------------------------------------------------------
 
 	/**
+	 * Default for get_batch_size() — how many orders aggregate() loads
+	 * into memory (as full WC_Order objects) at a time. See get_batch_size()
+	 * for why this exists at all.
+	 */
+	const DEFAULT_BATCH_SIZE = 200;
+
+	/**
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
 	 * @param bool              $lite  When true, skips every part of this
@@ -293,130 +300,180 @@ class ProfitLens_Profit_Engine {
 	 * @return array
 	 */
 	private function aggregate( DateTimeInterface $after, DateTimeInterface $before, $lite = false ) {
-		$orders = $this->get_counted_orders( $after, $before );
-
-		$revenue                = 0.0;
+		$revenue                 = 0.0;
 		$cost_totals             = array();
 		$chart_by_day            = array();
 		$products                = array();
 		$revenue_covered         = 0.0;
 		$revenue_uncovered       = 0.0;
 		$revenue_snapshot_backed = 0.0;
+		$orders_count            = 0;
 
 		foreach ( $this->all_components() as $component ) {
 			$cost_totals[ $component->get_key() ] = 0.0;
 		}
 
-		foreach ( $orders as $order ) {
-			$order_revenue = $this->get_order_revenue( $order );
-			$revenue      += $order_revenue;
+		// Paged rather than one wc_get_orders(['limit' => -1, ...]) call —
+		// issue #17: a 202-day range with 1,661 orders exhausted PHP's
+		// memory_limit loading every WC_Order object at once. Each batch
+		// is processed and discarded (unset() below) before the next page
+		// is fetched, so memory use stays bounded by batch size regardless
+		// of how many orders the range actually contains. Everything from
+		// here to the closing brace of the inner foreach is the exact same
+		// per-order accumulation this method always did — only the outer
+		// loop and the source of $orders are new, deliberately, to keep
+		// this change reviewable as "same math, paged differently" rather
+		// than a rewrite of the aggregation logic itself.
+		$batch_size = $this->get_batch_size();
+		$page       = 1;
 
-			// Resolved once per order and reused below for both the
-			// product cost component's total AND the per-product
-			// breakdown — resolve_line_items() is the single most
-			// expensive per-order operation here (a get_product_cost()
-			// plus refunded-qty/-amount lookup per line item), and calling
-			// it twice (once implicitly via
-			// ProfitLens_Cost_Component_Product::calculate(), once
-			// explicitly for the breakdown below) used to do exactly that
-			// redundant work on every single get_summary() call. It can't
-			// be skipped even in $lite mode: it's how the product cost
-			// component's own total gets computed, which revenue/cost_totals
-			// need either way.
-			$product_lines     = $this->product_cost->resolve_line_items( $order );
-			$product_cost_total = 0.0;
+		do {
+			$orders        = $this->get_counted_orders( $after, $before, $page, $batch_size );
+			$batch_count   = count( $orders );
+			$orders_count += $batch_count;
 
-			foreach ( $product_lines as $line ) {
-				$product_cost_total += $line['line_cost'];
-			}
+			foreach ( $orders as $order ) {
+				$order_revenue = $this->get_order_revenue( $order );
+				$revenue      += $order_revenue;
 
-			$order_costs = array();
+				// Resolved once per order and reused below for both the
+				// product cost component's total AND the per-product
+				// breakdown — resolve_line_items() is the single most
+				// expensive per-order operation here (a get_product_cost()
+				// plus refunded-qty/-amount lookup per line item), and calling
+				// it twice (once implicitly via
+				// ProfitLens_Cost_Component_Product::calculate(), once
+				// explicitly for the breakdown below) used to do exactly that
+				// redundant work on every single get_summary() call. It can't
+				// be skipped even in $lite mode: it's how the product cost
+				// component's own total gets computed, which revenue/cost_totals
+				// need either way.
+				$product_lines      = $this->product_cost->resolve_line_items( $order );
+				$product_cost_total = 0.0;
 
-			foreach ( $this->all_components() as $component ) {
-				// Same rounding ProfitLens_Cost_Component_Product::calculate()
-				// itself applies — this branch has to stay in exact sync
-				// with that method's behavior, not just its current
-				// implementation, since it's standing in for a call to it.
-				$amount = ( $component === $this->product_cost )
-					? round( $product_cost_total, 2 )
-					: $component->calculate( $order );
+				foreach ( $product_lines as $line ) {
+					$product_cost_total += $line['line_cost'];
+				}
 
-				$order_costs[ $component->get_key() ]  = $amount;
-				$cost_totals[ $component->get_key() ] += $amount;
-			}
+				$order_costs = array();
 
-			if ( $lite ) {
-				// Everything from here down only feeds chart_by_day,
-				// products, and revenue_covered/uncovered — none of which
-				// get_net_profit() reads. Skipping it doesn't touch a
-				// single query (it was already-loaded, in-memory data
-				// either way); it only cuts the per-order PHP bookkeeping.
-				continue;
-			}
+				foreach ( $this->all_components() as $component ) {
+					// Same rounding ProfitLens_Cost_Component_Product::calculate()
+					// itself applies — this branch has to stay in exact sync
+					// with that method's behavior, not just its current
+					// implementation, since it's standing in for a call to it.
+					$amount = ( $component === $this->product_cost )
+						? round( $product_cost_total, 2 )
+						: $component->calculate( $order );
 
-			$order_profit = $order_revenue - array_sum( $order_costs );
+					$order_costs[ $component->get_key() ]  = $amount;
+					$cost_totals[ $component->get_key() ] += $amount;
+				}
 
-			$created = $order->get_date_created();
-
-			if ( $created ) {
-				$day                   = $created->date( 'Y-m-d' );
-				$chart_by_day[ $day ]  = ( isset( $chart_by_day[ $day ] ) ? $chart_by_day[ $day ] : 0.0 ) + $order_profit;
-			}
-
-			foreach ( $product_lines as $line ) {
-				if ( ! $line['product'] ) {
+				if ( $lite ) {
+					// Everything from here down only feeds chart_by_day,
+					// products, and revenue_covered/uncovered — none of which
+					// get_net_profit() reads. Skipping it doesn't touch a
+					// single query (it was already-loaded, in-memory data
+					// either way); it only cuts the per-order PHP bookkeeping.
 					continue;
 				}
 
-				$product_id = $line['product']->get_id();
+				$order_profit = $order_revenue - array_sum( $order_costs );
 
-				// Scoped identically to revenue_covered/revenue_uncovered
-				// just below (same "has a product" gate, same net_revenue
-				// figure) so snapshot_covered_pct shares the exact same
-				// denominator as revenue_covered_pct — both describe a
-				// fraction of the same attributable-revenue universe.
-				if ( $line['from_snapshot'] ) {
-					$revenue_snapshot_backed += $line['net_revenue'];
+				$created = $order->get_date_created();
+
+				if ( $created ) {
+					$day                  = $created->date( 'Y-m-d' );
+					$chart_by_day[ $day ] = ( isset( $chart_by_day[ $day ] ) ? $chart_by_day[ $day ] : 0.0 ) + $order_profit;
 				}
 
-				if ( ! isset( $products[ $product_id ] ) ) {
-					$products[ $product_id ] = array(
-						'id'                => $product_id,
-						'name'              => $line['product']->get_name(),
-						'units'             => 0.0,
-						'revenue'           => 0.0,
-						'cost'              => 0.0,
-						// Split the same way the period-level revenue_covered/
-						// revenue_uncovered totals above are — this product's
-						// own share of each, so per-product coverage can be a
-						// real percentage instead of the all-or-nothing
-						// has_cost boolean below. A product with cost known
-						// for 9 of its 10 sales this period should not read
-						// the same as one with no cost anywhere: its
-						// cost/profit figures are only slightly off, not
-						// fabricated. Denominator for the percentage is this
-						// same product's own 'revenue' (built up below) — by
-						// construction, revenue_covered + revenue_uncovered
-						// always sums to it exactly, since every line's
-						// net_revenue lands in exactly one of the three.
-						'revenue_covered'   => 0.0,
-						'revenue_uncovered' => 0.0,
-					);
-				}
+				foreach ( $product_lines as $line ) {
+					if ( ! $line['product'] ) {
+						continue;
+					}
 
-				$products[ $product_id ]['units']   += $line['net_qty'];
-				$products[ $product_id ]['revenue'] += $line['net_revenue'];
-				$products[ $product_id ]['cost']    += $line['line_cost'];
+					$product_id = $line['product']->get_id();
 
-				if ( null !== $line['unit_cost'] ) {
-					$revenue_covered += $line['net_revenue'];
-					$products[ $product_id ]['revenue_covered'] += $line['net_revenue'];
-				} else {
-					$revenue_uncovered += $line['net_revenue'];
-					$products[ $product_id ]['revenue_uncovered'] += $line['net_revenue'];
+					// Scoped identically to revenue_covered/revenue_uncovered
+					// just below (same "has a product" gate, same net_revenue
+					// figure) so snapshot_covered_pct shares the exact same
+					// denominator as revenue_covered_pct — both describe a
+					// fraction of the same attributable-revenue universe.
+					if ( $line['from_snapshot'] ) {
+						$revenue_snapshot_backed += $line['net_revenue'];
+					}
+
+					if ( ! isset( $products[ $product_id ] ) ) {
+						$products[ $product_id ] = array(
+							'id'                => $product_id,
+							'name'              => $line['product']->get_name(),
+							'units'             => 0.0,
+							'revenue'           => 0.0,
+							'cost'              => 0.0,
+							// Split the same way the period-level revenue_covered/
+							// revenue_uncovered totals above are — this product's
+							// own share of each, so per-product coverage can be a
+							// real percentage instead of the all-or-nothing
+							// has_cost boolean below. A product with cost known
+							// for 9 of its 10 sales this period should not read
+							// the same as one with no cost anywhere: its
+							// cost/profit figures are only slightly off, not
+							// fabricated. Denominator for the percentage is this
+							// same product's own 'revenue' (built up below) — by
+							// construction, revenue_covered + revenue_uncovered
+							// always sums to it exactly, since every line's
+							// net_revenue lands in exactly one of the three.
+							'revenue_covered'   => 0.0,
+							'revenue_uncovered' => 0.0,
+						);
+					}
+
+					$products[ $product_id ]['units']   += $line['net_qty'];
+					$products[ $product_id ]['revenue'] += $line['net_revenue'];
+					$products[ $product_id ]['cost']    += $line['line_cost'];
+
+					if ( null !== $line['unit_cost'] ) {
+						$revenue_covered                            += $line['net_revenue'];
+						$products[ $product_id ]['revenue_covered'] += $line['net_revenue'];
+					} else {
+						$revenue_uncovered                            += $line['net_revenue'];
+						$products[ $product_id ]['revenue_uncovered'] += $line['net_revenue'];
+					}
 				}
 			}
-		}
+
+			// Drop this batch's WC_Order objects before fetching the next
+			// page — the whole point of paging in the first place.
+			unset( $orders );
+
+			// unset() alone is NOT enough — confirmed empirically, not
+			// assumed: WordPress's non-persistent object cache keeps its
+			// own reference to every order/item/product loaded this
+			// request (cache groups 'orders', 'order-items',
+			// 'order_item_meta', 'posts', 'post_meta', and the taxonomy
+			// relationship groups touched while resolving each line's
+			// product), and nothing evicts that cache mid-request by
+			// default. Measured directly against this environment's 1,661-
+			// order/202-day repro (issue #17): unset() alone still grew
+			// from 91MB to 125MB over 4 batches of 200 (heading straight
+			// for the 128MB limit); adding this call plateaued it at
+			// ~95MB for the full 1,661 orders across 9 batches.
+			// wp_cache_flush_runtime() (WP 6.0+, this plugin requires
+			// 6.4+) rather than naming those cache groups directly: it
+			// clears exactly the non-persistent, per-request runtime
+			// cache — which is what's actually leaking here — without
+			// touching a persistent object cache backend (Redis/
+			// Memcached) a real host might have configured, and without
+			// this code silently going stale if a future WooCommerce
+			// version renames its internal cache groups (already
+			// observed once while investigating this: this environment's
+			// actual group names didn't match what OrdersTableDataStore's
+			// own source suggested).
+			wp_cache_flush_runtime();
+
+			++$page;
+		} while ( $batch_count === $batch_size );
 
 		foreach ( $products as $product_id => $product ) {
 			$products[ $product_id ]['profit']     = $product['revenue'] - $product['cost'];
@@ -443,7 +500,7 @@ class ProfitLens_Profit_Engine {
 		}
 
 		return array(
-			'orders'                  => $orders,
+			'orders_count'            => $orders_count,
 			'revenue'                 => $revenue,
 			'cost_totals'             => $cost_totals,
 			'chart_by_day'            => $chart_by_day,
@@ -497,18 +554,74 @@ class ProfitLens_Profit_Engine {
 	 *
 	 * @param DateTimeInterface $after
 	 * @param DateTimeInterface $before
+	 * @param int               $page  1-indexed, per wc_get_orders()'s own 'page' arg
+	 *                                  (aliases to 'paged' internally for both the
+	 *                                  HPOS and CPT data stores — confirmed against
+	 *                                  this environment's WooCommerce, not assumed).
+	 * @param int               $limit Max orders for this page. Never -1 here — see
+	 *                                  aggregate(), which is the only caller and pages
+	 *                                  through in get_batch_size()-sized chunks
+	 *                                  specifically so this never has to load every
+	 *                                  matching order at once (issue #17).
 	 * @return WC_Order[]
 	 */
-	private function get_counted_orders( DateTimeInterface $after, DateTimeInterface $before ) {
+	private function get_counted_orders( DateTimeInterface $after, DateTimeInterface $before, $page, $limit ) {
 		return wc_get_orders(
 			array(
 				'type'         => 'shop_order',
 				'status'       => array( 'wc-completed', 'wc-processing' ),
 				'date_created' => $after->format( 'Y-m-d' ) . '...' . $before->format( 'Y-m-d' ),
-				'limit'        => -1,
+				'limit'        => $limit,
+				'page'         => $page,
+				// Explicit, not incidental: a deterministic sort is what
+				// makes paging safe at all — otherwise page 2 could
+				// reshuffle in an order page 1 already counted, or skip/
+				// repeat one, between the two queries. date_created alone
+				// isn't sufficient for that guarantee: checked
+				// OrdersTableQuery::process_orderby() in this environment's
+				// WooCommerce — it does NOT append id as an automatic
+				// tiebreaker, so two orders sharing the exact same
+				// date_created_gmt (down to the second) would have no
+				// guaranteed relative order across pages on ORDER BY date
+				// alone. 'date ID' compounds to
+				// "ORDER BY date_created_gmt ASC, id ASC" — id is the
+				// table's unique primary key, so this is fully
+				// deterministic regardless of how many orders share a
+				// timestamp.
+				'orderby'      => 'date ID',
+				'order'        => 'ASC',
 				'return'       => 'objects',
 			)
 		);
+	}
+
+	/**
+	 * How many orders aggregate() loads into memory (as full WC_Order
+	 * objects) per page, instead of one wc_get_orders(['limit' => -1])
+	 * call for the whole range. Issue #17: a 202-day range with 1,661
+	 * orders exhausted PHP's memory_limit doing exactly that.
+	 *
+	 * Filterable rather than hardcoded so tests can exercise the
+	 * multi-page path without creating hundreds of real orders, and so a
+	 * host with unusually low memory_limit (or unusually large orders)
+	 * has an escape hatch without a code change.
+	 *
+	 * @return int
+	 */
+	private function get_batch_size() {
+		/**
+		 * Filters ProfitLens_Profit_Engine::aggregate()'s order batch size.
+		 *
+		 * @param int $batch_size
+		 */
+		$batch_size = (int) apply_filters( 'profitlens_aggregate_batch_size', self::DEFAULT_BATCH_SIZE );
+
+		// A batch size <= 0 would make the do/while loop in aggregate()
+		// never terminate (0 matches `$batch_count === $batch_size` after
+		// an empty final page just as easily as it matches "more pages
+		// exist") — guard against a bad filter value rather than let that
+		// happen.
+		return $batch_size > 0 ? $batch_size : self::DEFAULT_BATCH_SIZE;
 	}
 
 	/**

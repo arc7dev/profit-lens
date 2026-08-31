@@ -2,11 +2,11 @@
 Contributors: arc7dev
 Tags: woocommerce, profit, analytics, cogs, dashboard
 Requires at least: 6.4
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.3
-Stable tag: 0.2.1
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,15 @@ a glance how much to trust the number instead of assuming it's complete.
 1. Dashboard — net profit, cost breakdown, and profit by product.
 
 == Changelog ==
+
+= 1.0.0 =
+* First stable release for WordPress.org.
+* Fix: custom date range picker no longer bleeds WP admin's blue into the calendar and the Apply button hover state — both now use the plugin's own mint accent.
+* Fix: custom date ranges over ~180 days no longer fail silently — aggregate() now processes orders in batches instead of loading the whole range in one query, which was exhausting PHP's memory limit.
+* Add: Export CSV button on the profit-by-product table.
+* Add: upgrade prompt for the Pro ad-spend features (profit after ad spend, ROAS by campaign) when connecting Meta Ads or Google Ads.
+* Fix: 3 CSS specificity/theme-color bugs found in a full-dashboard QA pass (profit/loss color coding not rendering, Upgrade to Pro button hover, product search focus outline).
+* Cleanup: full WordPress Coding Standards (PHPCS) compliance ahead of release.
 
 = 0.2.1 =
 * Fix: rebuild compiled bundle to include snapshot cost disclosure UI (was missing from 0.2.0 build).

@@ -95,8 +95,8 @@ class ProfitLens_CLI_Verify {
 			WP_CLI::error( 'WooCommerce is not active.' );
 		}
 
-		$after  = new DateTime( $assoc_args['after'] ?? '-12 months' );
-		$before = new DateTime( $assoc_args['before'] ?? 'today' );
+		$after            = new DateTime( $assoc_args['after'] ?? '-12 months' );
+		$before           = new DateTime( $assoc_args['before'] ?? 'today' );
 		$exclude_meta_key = $assoc_args['exclude-meta-key'] ?? null;
 
 		WP_CLI::log( sprintf( 'Range: %s to %s', $after->format( 'Y-m-d' ), $before->format( 'Y-m-d' ) ) );
@@ -111,15 +111,17 @@ class ProfitLens_CLI_Verify {
 		WP_CLI::log( sprintf( '%-12s %8s %12s %10s %10s %10s', 'status', 'orders', 'total', 'shipping', 'tax', 'discounts' ) );
 
 		foreach ( $breakdown as $status => $row ) {
-			WP_CLI::log( sprintf(
-				'%-12s %8d %12.2f %10.2f %10.2f %10.2f',
-				str_replace( 'wc-', '', $status ),
-				$row['count'],
-				$row['total'],
-				$row['shipping'],
-				$row['tax'],
-				$row['discount']
-			) );
+			WP_CLI::log(
+				sprintf(
+					'%-12s %8d %12.2f %10.2f %10.2f %10.2f',
+					str_replace( 'wc-', '', $status ),
+					$row['count'],
+					$row['total'],
+					$row['shipping'],
+					$row['tax'],
+					$row['discount']
+				)
+			);
 		}
 
 		$counted_statuses = array( 'wc-completed', 'wc-processing' );
@@ -162,23 +164,27 @@ class ProfitLens_CLI_Verify {
 
 		if ( $mismatches ) {
 			WP_CLI::log( '' );
-			WP_CLI::log( sprintf(
-				'%d of %d orders account for the entire %.2f delta — not spread across the rest:',
-				count( $mismatches ),
-				count( $engine_orders ),
-				$delta
-			) );
+			WP_CLI::log(
+				sprintf(
+					'%d of %d orders account for the entire %.2f delta — not spread across the rest:',
+					count( $mismatches ),
+					count( $engine_orders ),
+					$delta
+				)
+			);
 			WP_CLI::log( sprintf( '%-10s %-12s %10s %10s %8s', 'order', 'status', 'engine', 'direct', 'diff' ) );
 
 			foreach ( $mismatches as $m ) {
-				WP_CLI::log( sprintf(
-					'%-10d %-12s %10.2f %10.2f %+8.2f',
-					$m['id'],
-					$m['status'],
-					$m['engine'],
-					$m['direct'],
-					$m['diff']
-				) );
+				WP_CLI::log(
+					sprintf(
+						'%-10d %-12s %10.2f %10.2f %+8.2f',
+						$m['id'],
+						$m['status'],
+						$m['engine'],
+						$m['direct'],
+						$m['diff']
+					)
+				);
 			}
 
 			WP_CLI::error(
