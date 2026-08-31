@@ -15,3 +15,5 @@ vendor/
 .distignore
 .github/
 phpcs.xml
+.git/
+.phpunit.result.cache
