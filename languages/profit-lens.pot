@@ -1,0 +1,88 @@
+# Copyright (C) 2026 Arc7
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Profit Lens — Profit Analytics for WooCommerce 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/profit-lens\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-31T16:48:29+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: profit-lens\n"
+
+#. Plugin Name of the plugin
+#: profit-lens.php
+msgid "Profit Lens — Profit Analytics for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: profit-lens.php
+msgid "https://arc7.dev/profit-lens"
+msgstr ""
+
+#. Description of the plugin
+#: profit-lens.php
+msgid "Shows the real profit of your WooCommerce store — not just"
+msgstr ""
+
+#. Author of the plugin
+#: profit-lens.php
+msgid "Arc7"
+msgstr ""
+
+#. Author URI of the plugin
+#: profit-lens.php
+msgid "https://arc7.dev"
+msgstr ""
+
+#: includes/calculation/class-cost-component-gateway-fees.php:79
+msgid "Gateway Fees"
+msgstr ""
+
+#: includes/calculation/class-cost-component-product.php:213
+#: includes/calculation/class-cost-source-cogs.php:248
+msgid "Product Cost"
+msgstr ""
+
+#: includes/calculation/class-cost-component-refunds.php:41
+msgid "Refunds"
+msgstr ""
+
+#: includes/calculation/class-cost-component-shipping.php:40
+msgid "Shipping"
+msgstr ""
+
+#: includes/calculation/class-cost-component-shipping.php:54
+msgid "This is what customers were charged for shipping, not the store's real shipping cost — Free has no source for the latter."
+msgstr ""
+
+#. translators: 1: product name, 2: dollar amount lost, 3: units sold
+#: includes/calculation/class-profit-engine.php:811
+#, php-format
+msgid "%1$s lost $%2$s this period — %3$d units sold below cost."
+msgstr ""
+
+#: includes/class-admin.php:38
+#: includes/class-admin.php:39
+msgid "Profit Lens"
+msgstr ""
+
+#: includes/class-admin.php:54
+msgid "Profit Lens needs JavaScript enabled to show the dashboard."
+msgstr ""
+
+#: includes/class-assets.php:127
+msgid "Profit Lens: the dashboard hasn't been built yet (npm run build)."
+msgstr ""
+
+#: includes/class-plugin.php:135
+msgid "Profit Lens requires WooCommerce to be active."
+msgstr ""
+
+#: includes/class-rest-controller.php:148
+msgid "Profit Lens could not calculate profit for this period."
+msgstr ""
