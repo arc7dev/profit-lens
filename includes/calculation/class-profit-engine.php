@@ -300,7 +300,7 @@ class ProfitLens_Profit_Engine {
 	 * @return array
 	 */
 	private function aggregate( DateTimeInterface $after, DateTimeInterface $before, $lite = false ) {
-		$revenue                = 0.0;
+		$revenue                 = 0.0;
 		$cost_totals             = array();
 		$chart_by_day            = array();
 		$products                = array();
@@ -328,8 +328,8 @@ class ProfitLens_Profit_Engine {
 		$page       = 1;
 
 		do {
-			$orders       = $this->get_counted_orders( $after, $before, $page, $batch_size );
-			$batch_count  = count( $orders );
+			$orders        = $this->get_counted_orders( $after, $before, $page, $batch_size );
+			$batch_count   = count( $orders );
 			$orders_count += $batch_count;
 
 			foreach ( $orders as $order ) {
@@ -348,7 +348,7 @@ class ProfitLens_Profit_Engine {
 				// be skipped even in $lite mode: it's how the product cost
 				// component's own total gets computed, which revenue/cost_totals
 				// need either way.
-				$product_lines     = $this->product_cost->resolve_line_items( $order );
+				$product_lines      = $this->product_cost->resolve_line_items( $order );
 				$product_cost_total = 0.0;
 
 				foreach ( $product_lines as $line ) {
@@ -384,8 +384,8 @@ class ProfitLens_Profit_Engine {
 				$created = $order->get_date_created();
 
 				if ( $created ) {
-					$day                   = $created->date( 'Y-m-d' );
-					$chart_by_day[ $day ]  = ( isset( $chart_by_day[ $day ] ) ? $chart_by_day[ $day ] : 0.0 ) + $order_profit;
+					$day                  = $created->date( 'Y-m-d' );
+					$chart_by_day[ $day ] = ( isset( $chart_by_day[ $day ] ) ? $chart_by_day[ $day ] : 0.0 ) + $order_profit;
 				}
 
 				foreach ( $product_lines as $line ) {
@@ -434,10 +434,10 @@ class ProfitLens_Profit_Engine {
 					$products[ $product_id ]['cost']    += $line['line_cost'];
 
 					if ( null !== $line['unit_cost'] ) {
-						$revenue_covered += $line['net_revenue'];
+						$revenue_covered                            += $line['net_revenue'];
 						$products[ $product_id ]['revenue_covered'] += $line['net_revenue'];
 					} else {
-						$revenue_uncovered += $line['net_revenue'];
+						$revenue_uncovered                            += $line['net_revenue'];
 						$products[ $product_id ]['revenue_uncovered'] += $line['net_revenue'];
 					}
 				}
