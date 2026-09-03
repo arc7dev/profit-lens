@@ -22,6 +22,11 @@ const CAMPAIGNS = [
 export default function ProSection() {
 	const totalSpend = CAMPAIGNS.reduce( ( sum, c ) => sum + c.spend, 0 );
 	const [ showProModal, setShowProModal ] = useState( false );
+	// Set only when Profit Lens Pro is active AND its own license is
+	// valid (see ProfitLensPro_Plugin::provide_csv_import_url()) — Free
+	// never checks for Pro itself, it only reads whatever this filter
+	// resolved to server-side (class-assets.php).
+	const csvImportUrl = window.profitLensData?.csvImportUrl ?? '';
 
 	return (
 		<div className="pl-card pl-pro">
@@ -75,14 +80,20 @@ export default function ProSection() {
 					See true profit per campaign once ad spend is subtracted —
 					so you know which channels actually pay.
 				</p>
-				<button
-					type="button"
-					className="pl-pro__cta pl-mono"
-					data-pro-href="https://arc7.dev/profit-lens/pro"
-					onClick={ () => setShowProModal( true ) }
-				>
-					Connect Meta &amp; Google Ads
-				</button>
+				{ csvImportUrl ? (
+					<a href={ csvImportUrl } className="pl-pro__cta pl-mono">
+						Upload CSV
+					</a>
+				) : (
+					<button
+						type="button"
+						className="pl-pro__cta pl-mono"
+						data-pro-href="https://arc7.dev/profit-lens/pro"
+						onClick={ () => setShowProModal( true ) }
+					>
+						Connect Meta &amp; Google Ads
+					</button>
+				) }
 			</div>
 
 			<ProUpgradeModal
