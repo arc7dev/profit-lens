@@ -104,6 +104,17 @@ class ProfitLens_Assets {
 				// trigger button, and which day the calendar week starts on.
 				'dateFormat'        => get_option( 'date_format' ),
 				'startOfWeek'       => (int) get_option( 'start_of_week', 0 ),
+				// Empty by default — no external code registered. Pro (if
+				// active) hooks this to provide a real URL, gated on its own
+				// license validity; ProSection.jsx renders a real "Upload
+				// CSV" link when this is non-empty, and its existing
+				// ProUpgradeModal upsell otherwise. Free itself never
+				// assumes Pro exists, never checks for it, and doesn't
+				// change if Pro is absent — this is read-only surface Pro
+				// opts into from its own side, same shape as the
+				// profitlens_demo_status/profitlens_demo_error filters
+				// class-rest-controller.php already exposes.
+				'csvImportUrl'      => apply_filters( 'profitlens_csv_import_url', '' ),
 			)
 		);
 
