@@ -98,3 +98,20 @@ a glance how much to trust the number instead of assuming it's complete.
 = 0.1.0 =
 * Initial scaffolding: admin page, REST endpoint contract, and dashboard UI
   wired to example data. No profit calculation yet.
+
+== Source Code ==
+
+The complete source code, including all JavaScript source files, is
+publicly available on GitHub:
+
+https://github.com/arc7dev/profit-lens
+
+To build from source:
+
+1. Clone the repository.
+2. Run `npm install`.
+3. Run `npm run build`.
+
+The `src/` directory contains all unminified JavaScript and React source
+files. The `build/` directory contains the compiled assets included in
+the plugin.
