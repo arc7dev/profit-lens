@@ -76,7 +76,7 @@ a glance how much to trust the number instead of assuming it's complete.
 * First stable release for WordPress.org.
 * Fix: custom date range picker no longer bleeds WP admin's blue into the calendar and the Apply button hover state — both now use the plugin's own mint accent.
 * Fix: custom date ranges over ~180 days no longer fail silently — aggregate() now processes orders in batches instead of loading the whole range in one query, which was exhausting PHP's memory limit.
-* Add: Export CSV button on the profit-by-product table.
+* Add: Export CSV button on the profit-by-product table. (Pro)
 * Add: upgrade prompt for the Pro ad-spend features (profit after ad spend, ROAS by campaign) when connecting Meta Ads or Google Ads.
 * Fix: 3 CSS specificity/theme-color bugs found in a full-dashboard QA pass (profit/loss color coding not rendering, Upgrade to Pro button hover, product search focus outline).
 * Cleanup: full WordPress Coding Standards (PHPCS) compliance ahead of release.
