@@ -24,6 +24,12 @@ vendor/
 # (see tests/wp-tests-config.php in this environment for the shape).
 tests/wp-tests-config.php
 
+# Project-notes file from the outer (non-public) project folder — lives in
+# the repo root one level up (Profit_lens.nosync/CLAUDE.md), gets accidentally
+# copied/synced into this repo's root sometimes. Contains private business
+# and personal info, never meant for this public repo.
+CLAUDE.md
+
 # Editor / OS
 .DS_Store
 
