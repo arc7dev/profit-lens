@@ -36,6 +36,16 @@ class ProfitLens_Assets {
 
 		$asset = require $asset_file;
 
+		// Whether Pro is installed at all, and separately whether it has a
+		// valid license — two different things ProductTable.jsx's Export
+		// CSV button needs to tell apart (installed-but-unlicensed sends
+		// the merchant to activate a license; not-installed-at-all shows
+		// the upsell modal instead). function_exists() guards every call
+		// into Pro: Free never assumes Pro is active, same rule the
+		// existing csvImportUrl filter below already follows.
+		$pro_installed = function_exists( 'profitlens_pro_fs' );
+		$pro_licensed  = $pro_installed && profitlens_pro_fs()->can_use_premium_code__premium_only();
+
 		wp_enqueue_style(
 			self::HANDLE . '-fonts',
 			PROFITLENS_PLUGIN_URL . 'assets/css/fonts.css',
@@ -115,6 +125,19 @@ class ProfitLens_Assets {
 				// profitlens_demo_status/profitlens_demo_error filters
 				// class-rest-controller.php already exposes.
 				'csvImportUrl'      => apply_filters( 'profitlens_csv_import_url', '' ),
+				// Consumed by ProductTable.jsx's Export CSV button (the
+				// only working export this plugin has ever shipped is in
+				// Pro — see that button's CSS docblock in dashboard.css):
+				// licensed → call window.profitLensPro.exportTable()
+				// directly; installed-but-unlicensed → send the merchant
+				// to activate a license instead of showing the upsell
+				// modal meant for "you don't have Pro at all"; neither →
+				// existing modal, untouched. build_pro_status() is a pure
+				// function of these two booleans specifically so the
+				// three states are unit-testable without needing Pro
+				// actually installed/uninstalled in the test run (see
+				// tests/test-pro-status.php).
+				'proStatus'         => self::build_pro_status( $pro_installed, $pro_licensed ),
 			)
 		);
 
@@ -127,6 +150,36 @@ class ProfitLens_Assets {
 				'root'  => esc_url_raw( rest_url() ),
 				'nonce' => wp_create_nonce( 'wp_rest' ),
 			)
+		);
+	}
+
+	/**
+	 * Pure function of the two Pro-detection booleans — split out from
+	 * enqueue() so it's unit-testable on its own. function_exists(
+	 * 'profitlens_pro_fs' ) and profitlens_pro_fs()->
+	 * can_use_premium_code__premium_only() both read real global state
+	 * (whether the Pro plugin file loaded at all, and its live Freemius
+	 * connection) that a single PHPUnit process can't toggle between
+	 * "Pro absent" / "Pro present" mid-run without side effects on every
+	 * other test sharing that process — this method takes the two
+	 * booleans as plain arguments instead, so all three states Free's
+	 * Export CSV button branches on can be asserted directly.
+	 *
+	 * `licensed` is forced to false whenever `installed` is false — a
+	 * defensive floor, not a real path (the call site above already only
+	 * evaluates $pro_licensed when $pro_installed is true), so a future
+	 * caller can't end up with the nonsensical "licensed but not
+	 * installed" combination.
+	 *
+	 * @param bool $installed
+	 * @param bool $licensed
+	 * @return array{installed:bool,licensed:bool,dashboardUrl:string}
+	 */
+	public static function build_pro_status( $installed, $licensed ) {
+		return array(
+			'installed'    => (bool) $installed,
+			'licensed'     => $installed && $licensed,
+			'dashboardUrl' => admin_url( 'admin.php?page=profit-lens-pro' ),
 		);
 	}
 

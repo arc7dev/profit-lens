@@ -184,6 +184,43 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 		setPage( 0 );
 	}
 
+	/**
+	 * Export CSV was Pro-only from the start (see .pl-pro-chip's docblock
+	 * in dashboard.css) — Free never had a working export to preserve, it
+	 * only decides where this click goes. `sorted` (not `paged`) is what
+	 * gets handed to Pro: the full filtered+sorted set the merchant is
+	 * currently looking at, not just whichever 25-row page happens to be
+	 * on screen (see this component's own docblock on why pagination is
+	 * client-side over the full array). Pro's exportTable() takes that
+	 * array directly rather than scraping the rendered <table> back into
+	 * data — the DOM only ever holds one page, and its cells are already
+	 * currency-formatted strings a scraper would have to parse back into
+	 * numbers.
+	 */
+	function handleExportClick() {
+		const proStatus = window.profitLensData?.proStatus;
+
+		if ( proStatus?.licensed ) {
+			window.profitLensPro?.exportTable?.(
+				sorted,
+				COLUMNS,
+				rangeLabel
+			);
+			return;
+		}
+
+		if ( proStatus?.installed ) {
+			// Pro is active but the license isn't valid — the "buy Pro"
+			// modal below doesn't apply to a merchant who already owns
+			// it, so send them to activate it instead.
+			window.location.href = proStatus.dashboardUrl;
+			return;
+		}
+
+		// Pro isn't installed at all — existing upsell modal, unchanged.
+		setShowProModal( true );
+	}
+
 	function handleClearSearch() {
 		handleSearchChange( '' );
 		// Standard "clear search" UX — leaves focus where the user's
@@ -293,7 +330,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 					<button
 						type="button"
 						className="pl-pro-chip"
-						onClick={ () => setShowProModal( true ) }
+						onClick={ handleExportClick }
 					>
 						<span className="pl-pro-chip__label">
 							Export CSV
