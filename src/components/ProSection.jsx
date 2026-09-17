@@ -16,14 +16,23 @@ import ProUpgradeModal from './ProUpgradeModal';
  * hasAdSpendData, see class-assets.php's profitlens_has_ad_spend_data
  * filter), this upsell is pointless — the merchant already owns the
  * feature it's advertising. In that case this renders an empty mount
- * div instead and hands it to Pro's own bridge script
- * (window.profitLensPro.mountProfitAfterAdSpend(), assets/js/
- * profit-after-ad-spend.js in profit-lens-pro/ — same
+ * div instead and hands it to Pro's own bundle (loaded on Free's
+ * screen too — see class-assets-pro.php's
+ * enqueue_profit_after_ad_spend_bridge() in profit-lens-pro/, same
  * enqueue-on-Free's-screen-only pattern as the existing Export CSV
- * bridge, ProductTable.jsx/class-assets-pro.php's
- * enqueue_export_bridge()) to fill in. Free never renders Pro's actual
- * content itself — same reason it doesn't scrape/duplicate Pro's own
- * React tree for the export bridge either.
+ * bridge, just the full React+Recharts bundle instead of a plain
+ * unbundled script, since the real component needs both) to fill in
+ * via window.profitLensPro.mountProfitAfterAdSpend(). Free never
+ * renders Pro's actual content itself — same reason it doesn't
+ * scrape/duplicate Pro's own React tree for the export bridge either.
+ *
+ * `range` (Dashboard.jsx's own {key, label, after, before}) is passed
+ * straight through to that mount call and re-triggers it on change —
+ * the selected date range lives only in Dashboard.jsx's React state,
+ * never sent back to PHP (it's request-scoped, not the kind of
+ * once-per-page-load data class-assets.php's window.profitLensData
+ * localizes), so this is the only way Pro's mounted component can
+ * know which period Free is currently showing.
  */
 const CAMPAIGNS = [
 	{ label: 'Meta — Retargeting', roas: 4.2, spend: 340 },
@@ -32,7 +41,11 @@ const CAMPAIGNS = [
 	{ label: 'Google Search — Brand', roas: 6.7, spend: 95 },
 ];
 
-export default function ProSection() {
+/**
+ * @param {Object}                                               props
+ * @param {{key:string,label:string,after:string,before:string}} props.range Dashboard.jsx's currently selected period — forwarded to Pro's mount call untouched.
+ */
+export default function ProSection( { range } ) {
 	const totalSpend = CAMPAIGNS.reduce( ( sum, c ) => sum + c.spend, 0 );
 	const [ showProModal, setShowProModal ] = useState( false );
 	// Set only when Profit Lens Pro is active AND its own license is
@@ -50,9 +63,12 @@ export default function ProSection() {
 
 	useEffect( () => {
 		if ( hasAdSpendData ) {
-			window.profitLensPro?.mountProfitAfterAdSpend?.( mountRef.current );
+			window.profitLensPro?.mountProfitAfterAdSpend?.(
+				mountRef.current,
+				range
+			);
 		}
-	}, [ hasAdSpendData ] );
+	}, [ hasAdSpendData, range ] );
 
 	if ( hasAdSpendData ) {
 		// Bare .pl-card only (not .pl-pro — that class exists for this

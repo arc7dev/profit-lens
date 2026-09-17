@@ -285,7 +285,7 @@ export default function Dashboard() {
 						rangeLabel={ range.label }
 					/>
 
-					<ProSection />
+					<ProSection range={ range } />
 				</>
 			) }
 		</div>
