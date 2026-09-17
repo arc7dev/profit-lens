@@ -125,6 +125,17 @@ class ProfitLens_Assets {
 				// profitlens_demo_status/profitlens_demo_error filters
 				// class-rest-controller.php already exposes.
 				'csvImportUrl'      => apply_filters( 'profitlens_csv_import_url', '' ),
+				// Empty/false by default, same shape and rationale as
+				// csvImportUrl right above — Pro (if active and licensed)
+				// hooks this to report whether it has any real ad spend
+				// data on file (see ProfitLensPro_Ad_Spend_Registry::
+				// has_connected_source()). ProSection.jsx swaps its Pro
+				// upsell for an actual (currently placeholder) Pro
+				// component when this is true, same "Free defines an
+				// empty extension point, Pro opts into it" shape as
+				// csvImportUrl — not a new mechanism, the second use of
+				// an existing one.
+				'hasAdSpendData'    => (bool) apply_filters( 'profitlens_has_ad_spend_data', false ),
 				// Consumed by ProductTable.jsx's Export CSV button (the
 				// only working export this plugin has ever shipped is in
 				// Pro — see that button's CSS docblock in dashboard.css):

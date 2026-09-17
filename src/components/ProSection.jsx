@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 
 import ProUpgradeModal from './ProUpgradeModal';
 
@@ -11,6 +11,19 @@ import ProUpgradeModal from './ProUpgradeModal';
  *
  * Campaign data is hardcoded, only for the blurred preview; it's never
  * calculated or shown in full in the free plugin.
+ *
+ * Once Pro actually has ad spend data on file (profitLensData.
+ * hasAdSpendData, see class-assets.php's profitlens_has_ad_spend_data
+ * filter), this upsell is pointless — the merchant already owns the
+ * feature it's advertising. In that case this renders an empty mount
+ * div instead and hands it to Pro's own bridge script
+ * (window.profitLensPro.mountProfitAfterAdSpend(), assets/js/
+ * profit-after-ad-spend.js in profit-lens-pro/ — same
+ * enqueue-on-Free's-screen-only pattern as the existing Export CSV
+ * bridge, ProductTable.jsx/class-assets-pro.php's
+ * enqueue_export_bridge()) to fill in. Free never renders Pro's actual
+ * content itself — same reason it doesn't scrape/duplicate Pro's own
+ * React tree for the export bridge either.
  */
 const CAMPAIGNS = [
 	{ label: 'Meta — Retargeting', roas: 4.2, spend: 340 },
@@ -27,6 +40,29 @@ export default function ProSection() {
 	// never checks for Pro itself, it only reads whatever this filter
 	// resolved to server-side (class-assets.php).
 	const csvImportUrl = window.profitLensData?.csvImportUrl ?? '';
+	// Same shape/rationale as csvImportUrl above: false unless Pro is
+	// active, licensed, AND actually has ad spend data on file (see
+	// ProfitLensPro_Ad_Spend_Registry::has_connected_source()) —
+	// Pro's own filter callback already folds the license check in, so
+	// this is the one flag this component needs to branch on.
+	const hasAdSpendData = Boolean( window.profitLensData?.hasAdSpendData );
+	const mountRef = useRef( null );
+
+	useEffect( () => {
+		if ( hasAdSpendData ) {
+			window.profitLensPro?.mountProfitAfterAdSpend?.( mountRef.current );
+		}
+	}, [ hasAdSpendData ] );
+
+	if ( hasAdSpendData ) {
+		// Bare .pl-card only (not .pl-pro — that class exists for this
+		// component's own blur+overlay upsell trick, meaningless without
+		// the specific child markup it's built against). Padding/layout
+		// for whatever's inside is Pro's own bridge script's job, not
+		// something Free pre-supplies for content it doesn't know the
+		// shape of.
+		return <div className="pl-card" ref={ mountRef } />;
+	}
 
 	return (
 		<div className="pl-card pl-pro">
