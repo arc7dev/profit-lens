@@ -7,7 +7,7 @@ import {
 } from '../data/mock';
 import { useSummary } from '../hooks/useSummary';
 import { formatCurrency } from '../utils/currency';
-import CostBreakdown from './CostBreakdown';
+import CostBreakdownSlot from './CostBreakdownSlot';
 import CostCoverageNotice from './CostCoverageNotice';
 import CustomRangePicker from './CustomRangePicker';
 import EmptyState from './EmptyState';
@@ -169,6 +169,12 @@ export default function Dashboard() {
 		range,
 	} = data;
 	const isNetLoss = kpis.net_profit.amount < 0;
+	// Same flag CostBreakdownSlot/ProSection use to decide whether to hand
+	// their own slot over to Pro — read here too so this KPI card's label
+	// stays honest: once Pro's extended Cost Breakdown card is showing an
+	// Ad Spend line and a bigger total right below this one, "Total Costs"
+	// unqualified would silently disagree with it.
+	const hasAdSpendData = Boolean( window.profitLensData?.hasAdSpendData );
 
 	const changePct = kpis.net_profit.change_pct;
 	// Independent of isNetLoss: this is a TREND indicator (better or worse
@@ -259,7 +265,11 @@ export default function Dashboard() {
 							sub={ `${ kpis.revenue.orders_count } orders · ${ range.label }` }
 						/>
 						<KpiCard
-							label="Total Costs"
+							label={
+								hasAdSpendData
+									? 'Total Costs (before ad spend)'
+									: 'Total Costs'
+							}
 							value={ formatCurrency(
 								kpis.total_costs.amount,
 								0
@@ -276,16 +286,19 @@ export default function Dashboard() {
 							rangeLabel={ range.label }
 							series={ chart.series }
 						/>
-						<CostBreakdown items={ costBreakdown } />
+						<CostBreakdownSlot
+							items={ costBreakdown }
+							range={ range }
+						/>
 					</div>
+
+					<ProSection range={ range } />
 
 					<ProductTable
 						products={ products }
 						totals={ productsMeta.totals }
 						rangeLabel={ range.label }
 					/>
-
-					<ProSection range={ range } />
 				</>
 			) }
 		</div>
