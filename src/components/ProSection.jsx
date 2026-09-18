@@ -26,13 +26,15 @@ import ProUpgradeModal from './ProUpgradeModal';
  * renders Pro's actual content itself — same reason it doesn't
  * scrape/duplicate Pro's own React tree for the export bridge either.
  *
- * `range` (Dashboard.jsx's own {key, label, after, before}) is passed
- * straight through to that mount call and re-triggers it on change —
- * the selected date range lives only in Dashboard.jsx's React state,
- * never sent back to PHP (it's request-scoped, not the kind of
- * once-per-page-load data class-assets.php's window.profitLensData
- * localizes), so this is the only way Pro's mounted component can
- * know which period Free is currently showing.
+ * `range` and `netProfit` (Dashboard.jsx's own state) are passed
+ * straight through to that mount call and re-trigger it on change — both
+ * are request-scoped (the selected date range, and that range's own
+ * already-calculated net profit), never sent back to PHP, so this is the
+ * only way Pro's mounted component can know either one. netProfit
+ * specifically is NOT in window.profitLensData (class-assets.php) on
+ * purpose — that object is static, once-per-page-load store config
+ * (currency formatting, isDebug, feature flags), not per-request
+ * calculated figures.
  */
 const CAMPAIGNS = [
 	{ label: 'Meta — Retargeting', roas: 4.2, spend: 340 },
@@ -43,9 +45,10 @@ const CAMPAIGNS = [
 
 /**
  * @param {Object}                                               props
- * @param {{key:string,label:string,after:string,before:string}} props.range Dashboard.jsx's currently selected period — forwarded to Pro's mount call untouched.
+ * @param {{key:string,label:string,after:string,before:string}} props.range     Dashboard.jsx's currently selected period — forwarded to Pro's mount call untouched.
+ * @param {number}                                               props.netProfit Dashboard.jsx's already-calculated Net Profit KPI for that same period — Pro's own "Profit after ad spend" tile needs this, not a second net-profit calculation of its own.
  */
-export default function ProSection( { range } ) {
+export default function ProSection( { range, netProfit } ) {
 	const totalSpend = CAMPAIGNS.reduce( ( sum, c ) => sum + c.spend, 0 );
 	const [ showProModal, setShowProModal ] = useState( false );
 	// Set only when Profit Lens Pro is active AND its own license is
@@ -63,21 +66,19 @@ export default function ProSection( { range } ) {
 
 	useEffect( () => {
 		if ( hasAdSpendData ) {
-			window.profitLensPro?.mountProfitAfterAdSpend?.(
-				mountRef.current,
-				range
-			);
+			window.profitLensPro?.mountProfitAfterAdSpend?.( mountRef.current, {
+				range,
+				netProfit,
+			} );
 		}
-	}, [ hasAdSpendData, range ] );
+	}, [ hasAdSpendData, range, netProfit ] );
 
 	if ( hasAdSpendData ) {
-		// Bare .pl-card only (not .pl-pro — that class exists for this
-		// component's own blur+overlay upsell trick, meaningless without
-		// the specific child markup it's built against). Padding/layout
-		// for whatever's inside is Pro's own bridge script's job, not
-		// something Free pre-supplies for content it doesn't know the
-		// shape of.
-		return <div className="pl-card" ref={ mountRef } />;
+		// No className here on purpose (not even .pl-card) — Pro's
+		// mounted content is multiple stacked blocks (a KPI tile, a
+		// chart, a breakdown list), each already its own .pl-card; Free
+		// doesn't guess at that shape by pre-wrapping it in one.
+		return <div ref={ mountRef } />;
 	}
 
 	return (
