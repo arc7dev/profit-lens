@@ -288,6 +288,7 @@ export default function Dashboard() {
 						products={ products }
 						totals={ productsMeta.totals }
 						rangeLabel={ range.label }
+						range={ range }
 					/>
 				</>
 			) }

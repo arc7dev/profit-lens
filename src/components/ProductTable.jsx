@@ -160,8 +160,14 @@ function SortIcon( { active, dir } ) {
  * @param {Array}                                                                     props.products
  * @param {{units:number,revenue:number,cost:number,profit:number,margin_pct:number}} props.totals
  * @param {string}                                                                    props.rangeLabel
+ * @param {{key:string,label:string,after:string,before:string}}                      props.range      Dashboard.jsx's currently selected period — after/before (not just the label) are needed here to open Pro's product detail modal for the exact period this table is already showing.
  */
-export default function ProductTable( { products, totals, rangeLabel } ) {
+export default function ProductTable( {
+	products,
+	totals,
+	rangeLabel,
+	range,
+} ) {
 	const [ sortKey, setSortKey ] = useState( 'profit' );
 	const [ sortDir, setSortDir ] = useState( 'desc' );
 	const [ search, setSearch ] = useState( '' );
@@ -201,11 +207,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 		const proStatus = window.profitLensData?.proStatus;
 
 		if ( proStatus?.licensed ) {
-			window.profitLensPro?.exportTable?.(
-				sorted,
-				COLUMNS,
-				rangeLabel
-			);
+			window.profitLensPro?.exportTable?.( sorted, COLUMNS, rangeLabel );
 			return;
 		}
 
@@ -332,9 +334,7 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 						className="pl-pro-chip"
 						onClick={ handleExportClick }
 					>
-						<span className="pl-pro-chip__label">
-							Export CSV
-						</span>
+						<span className="pl-pro-chip__label">Export CSV</span>
 						<span className="pl-pro-chip__badge">PRO</span>
 					</button>
 					<div className="pl-table-card__count pl-mono">
@@ -386,9 +386,36 @@ export default function ProductTable( { products, totals, rangeLabel } ) {
 
 						{ paged.map( ( row ) => {
 							const isLoss = row.has_cost && row.profit < 0;
+							// window.profitLensPro.openProductModal only
+							// exists once Pro's bundle actually loaded on
+							// this screen (class-assets-pro.php's
+							// enqueue_profit_after_ad_spend_bridge(), gated
+							// on license validity) — same optional-chaining
+							// pattern ProSection.jsx already uses, so a row
+							// is inert with a plain cursor when Pro isn't
+							// active/licensed, no separate flag to check.
+							const canOpenModal = Boolean(
+								window.profitLensPro?.openProductModal
+							);
 
 							return (
-								<tr key={ row.id }>
+								<tr
+									key={ row.id }
+									onClick={ () => {
+										if ( canOpenModal ) {
+											window.profitLensPro.openProductModal(
+												row.id,
+												range.after,
+												range.before
+											);
+										}
+									} }
+									style={ {
+										cursor: canOpenModal
+											? 'pointer'
+											: 'default',
+									} }
+								>
 									<td className={ NAME_CELL_CLASS }>
 										<div
 											className="pl-table__name-text"
