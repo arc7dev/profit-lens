@@ -130,12 +130,13 @@ export default function ProSection( { range, netProfit } ) {
 				<div className="pl-pro__eyebrow pl-mono">Pro feature</div>
 				<div className="pl-pro__title">Profit after ad spend</div>
 				<p className="pl-pro__copy">
-					See true profit per campaign once ad spend is subtracted —
-					so you know which channels actually pay.
+					See your true profit once ad spend is subtracted, broken
+					down by platform — so you know exactly where your marketing
+					budget goes.
 				</p>
 				{ csvImportUrl ? (
 					<a href={ csvImportUrl } className="pl-pro__cta pl-mono">
-						Upload CSV
+						Set Up Your Ad Source
 					</a>
 				) : (
 					<button
