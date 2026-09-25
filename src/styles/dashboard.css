@@ -975,6 +975,14 @@
 .pl-pro {
 	position: relative;
 	overflow: hidden;
+	/* Same 20px as .pl-row's own margin-bottom (Row 3, right above this
+	   section) — needed since ProSection.jsx now sits between that row
+	   and ProductTable, not at the very end of the page where a bottom
+	   margin wouldn't have mattered. Pro's own real content (once ad
+	   spend data exists) supplies its own spacing via .pl-row/
+	   .plp-ad-spend-row; this upsell markup is Free's own and needs the
+	   same treatment explicitly. */
+	margin-bottom: 20px;
 }
 
 .pl-pro__preview {

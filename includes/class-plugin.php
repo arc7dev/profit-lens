@@ -24,6 +24,7 @@ class ProfitLens_Plugin {
 	 * @var array<string,string>
 	 */
 	private static $class_map = array(
+		'ProfitLens_Access'                      => 'class-access.php',
 		'ProfitLens_Admin'                       => 'class-admin.php',
 		'ProfitLens_Assets'                      => 'class-assets.php',
 		'ProfitLens_REST_Controller'             => 'class-rest-controller.php',

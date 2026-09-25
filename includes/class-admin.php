@@ -31,8 +31,18 @@ class ProfitLens_Admin {
 	 * Hangs "Profit Lens" off the WooCommerce menu, not the top-level
 	 * menu — the tool lives where the user already expects to find their
 	 * store's analytics.
+	 *
+	 * Gated on ProfitLens_Access::current_user_has_access(): when Pro's
+	 * User Control tab has restricted access to specific users, someone
+	 * outside that list gets no menu item at all, not a menu item that
+	 * leads to a 403 — the plugin is meant to be invisible to them, the
+	 * same way a page they can't manage_woocommerce for already is.
 	 */
 	public function register_menu() {
+		if ( ! ProfitLens_Access::current_user_has_access() ) {
+			return;
+		}
+
 		$this->hook_suffix = add_submenu_page(
 			'woocommerce',
 			__( 'Profit Lens', 'profit-lens' ),

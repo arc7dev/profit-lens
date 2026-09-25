@@ -70,10 +70,15 @@ class ProfitLens_REST_Controller {
 	}
 
 	/**
+	 * ProfitLens_Access::current_user_has_access() already requires
+	 * manage_woocommerce as its own fallback when Pro isn't narrowing
+	 * access (see that class's own docblock) — calling it alone here
+	 * covers both cases without checking the capability twice.
+	 *
 	 * @return bool
 	 */
 	public function check_permission() {
-		return current_user_can( 'manage_woocommerce' );
+		return ProfitLens_Access::current_user_has_access();
 	}
 
 	/**

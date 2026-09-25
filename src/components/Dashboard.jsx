@@ -279,13 +279,17 @@ export default function Dashboard() {
 						<CostBreakdown items={ costBreakdown } />
 					</div>
 
+					<ProSection
+						range={ range }
+						netProfit={ kpis.net_profit.amount }
+					/>
+
 					<ProductTable
 						products={ products }
 						totals={ productsMeta.totals }
 						rangeLabel={ range.label }
+						range={ range }
 					/>
-
-					<ProSection />
 				</>
 			) }
 		</div>
