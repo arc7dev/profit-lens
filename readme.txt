@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.3
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,12 @@ a glance how much to trust the number instead of assuming it's complete.
 1. Dashboard — net profit, cost breakdown, and profit by product.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: Product rows in the profit table now open a detailed view when Profit Lens Pro is active.
+* Added: Plugin visibility can now be restricted to specific users via User Control in Profit Lens Pro settings.
+* Improved: Ad Spend section updated to support platform breakdown provided by Profit Lens Pro.
+* Improved: REST endpoints respect user access control when Profit Lens Pro access rules are configured.
 
 = 1.0.0 =
 * First stable release for WordPress.org.
