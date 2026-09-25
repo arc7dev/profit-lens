@@ -21,10 +21,34 @@ class Test_ProfitLens_Access extends WP_UnitTestCase {
 		parent::tear_down();
 	}
 
+	/**
+	 * `manage_woocommerce` is a capability WooCommerce itself registers
+	 * onto the administrator role when it activates — it isn't one WP
+	 * core grants to any role on its own. This suite's CI run has no
+	 * WooCommerce installed, so an administrator created via the user
+	 * factory has every default WP-core capability but NOT this one,
+	 * and every test that relies on the "falls back to manage_woocommerce"
+	 * behavior needs it granted directly rather than assumed from a role.
+	 * Confirmed this is the actual cause of the 3 CI failures reported
+	 * (not a stale/zero current-user-ID issue): each failure traces to
+	 * either a direct current_user_can('manage_woocommerce') assertion or
+	 * a call into ProfitLens_Access::current_user_has_access() that falls
+	 * through to one — the array-membership tests below (which never call
+	 * current_user_can() at all) pass in both environments already.
+	 *
+	 * @return int New user ID, with manage_woocommerce explicitly granted.
+	 */
+	private function create_user_with_manage_woocommerce() {
+		$user_id = self::factory()->user->create();
+		( new WP_User( $user_id ) )->add_cap( 'manage_woocommerce' );
+
+		return $user_id;
+	}
+
 	public function test_falls_back_to_manage_woocommerce_when_option_missing() {
 		$this->assertFalse( get_option( 'profit_lens_allowed_users' ) );
 
-		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_id = $this->create_user_with_manage_woocommerce();
 		wp_set_current_user( $admin_id );
 		$this->assertTrue( ProfitLens_Access::current_user_has_access() );
 
@@ -49,7 +73,7 @@ class Test_ProfitLens_Access extends WP_UnitTestCase {
 	 */
 	public function test_false_when_option_exists_and_current_user_is_not_in_it() {
 		$allowed_id     = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$not_allowed_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$not_allowed_id = $this->create_user_with_manage_woocommerce();
 		update_option( 'profit_lens_allowed_users', array( $allowed_id ) );
 
 		wp_set_current_user( $not_allowed_id );
@@ -65,7 +89,7 @@ class Test_ProfitLens_Access extends WP_UnitTestCase {
 	public function test_falls_back_to_manage_woocommerce_when_list_is_empty() {
 		update_option( 'profit_lens_allowed_users', array() );
 
-		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$admin_id = $this->create_user_with_manage_woocommerce();
 		wp_set_current_user( $admin_id );
 
 		$this->assertTrue( ProfitLens_Access::current_user_has_access() );
