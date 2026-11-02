@@ -1,8 +1,99 @@
+import { __ } from '@wordpress/i18n';
+
 /**
  * "Costs not configured" state. Dashboard layout in the background,
  * blurred, with a centered setup card — matching the reference Figma
  * export.
+ *
+ * Two distinct setups collapse into the same REST status ("empty"), so
+ * the copy/CTA here is driven by `setupStatus`
+ * (class-rest-controller.php's `setup_status`, 'cogs_disabled' |
+ * 'no_costs'): WooCommerce's Cost of Goods Sold feature being off
+ * entirely is a different problem (and fix) from it being on with no
+ * product priced yet — sending both cases to "go look at a product"
+ * stranded a merchant with COGS disabled, since that screen has no cost
+ * field to find at all. Defaults to 'cogs_disabled' when the prop is
+ * missing (older cached response shape, or a bug upstream) — the more
+ * complete, two-step onboarding — rather than rendering nothing.
  */
+
+const SETUP_CONTENT = {
+	cogs_disabled: {
+		title: __( 'Set up product costs to see your profit', 'profit-lens' ),
+		intro: __(
+			"Profit Lens calculates your profit from the cost of each product. WooCommerce includes this feature, but it's turned off by default.",
+			'profit-lens'
+		),
+		steps: [
+			{
+				key: 'enable',
+				status: 'current',
+				title: __( 'Enable Cost of Goods Sold', 'profit-lens' ),
+				description: __(
+					'WooCommerce › Settings › Advanced › Features',
+					'profit-lens'
+				),
+			},
+			{
+				key: 'add-cost',
+				status: 'upcoming',
+				title: __( 'Add a cost to your products', 'profit-lens' ),
+				description: __(
+					"In each product's edit screen, including variations",
+					'profit-lens'
+				),
+			},
+			{
+				key: 'return',
+				status: 'upcoming',
+				title: __( 'Come back here', 'profit-lens' ),
+				description: __(
+					'Your profit dashboard will load automatically',
+					'profit-lens'
+				),
+			},
+		],
+		note: null,
+		cta: {
+			label: __( 'Enable Cost of Goods Sold', 'profit-lens' ),
+			urlKey: 'cogsSettingsUrl',
+		},
+		secondaryLink: {
+			label: __( 'Learn how it works', 'profit-lens' ),
+			href: 'https://woocommerce.com/document/woocommerce-cost-of-goods-sold/',
+		},
+	},
+	no_costs: {
+		title: __( 'Add costs to your products', 'profit-lens' ),
+		intro: null,
+		steps: [
+			{
+				key: 'enable',
+				status: 'completed',
+				title: __( 'Cost of Goods Sold enabled', 'profit-lens' ),
+				description: null,
+			},
+			{
+				key: 'add-cost',
+				status: 'current',
+				title: __( 'Add a cost to your products', 'profit-lens' ),
+				description: __(
+					"In each product's edit screen, including variations",
+					'profit-lens'
+				),
+			},
+		],
+		note: __(
+			"You don't need to do every product at once — start with your best sellers. The dashboard will show how much of your revenue has a cost.",
+			'profit-lens'
+		),
+		cta: {
+			label: __( 'Go to Products', 'profit-lens' ),
+			urlKey: 'productsUrl',
+		},
+		secondaryLink: null,
+	},
+};
 
 function Bar( { w, h, opacity = 1, color = '#12212e' } ) {
 	return (
@@ -210,7 +301,10 @@ function DashboardPreview() {
 	);
 }
 
-export default function EmptyState() {
+export default function EmptyState( { setupStatus } ) {
+	const content = SETUP_CONTENT[ setupStatus ] || SETUP_CONTENT.cogs_disabled;
+	const ctaUrl = window.profitLensData?.[ content.cta.urlKey ] ?? '';
+
 	return (
 		<div>
 			<div className="pl-header">
@@ -291,26 +385,77 @@ export default function EmptyState() {
 							</svg>
 						</div>
 
-						<h2 className="pl-empty__title">
-							Product costs not configured
-						</h2>
+						<h2 className="pl-empty__title">{ content.title }</h2>
 
-						<p className="pl-empty__copy">
-							Net profit can&rsquo;t be calculated until you enter
-							the cost of each product — without it, WooCommerce
-							only shows revenue.
-						</p>
+						{ content.intro && (
+							<p className="pl-empty__copy">{ content.intro }</p>
+						) }
 
-						<a
-							className="pl-empty__cta pl-mono"
-							href="edit.php?post_type=product"
-						>
-							Enable Cost of Goods in WooCommerce
+						<ol className="pl-setup-steps">
+							{ content.steps.map( ( step ) => (
+								<li
+									key={ step.key }
+									className={ `pl-setup-step pl-setup-step--${ step.status }` }
+									aria-current={
+										step.status === 'current'
+											? 'step'
+											: undefined
+									}
+								>
+									<span
+										className="pl-setup-step__marker"
+										aria-hidden="true"
+									>
+										{ step.status === 'completed' ? (
+											<svg
+												width="12"
+												height="12"
+												viewBox="0 0 12 12"
+												fill="none"
+											>
+												<polyline
+													points="2,6.5 5,9.5 10,3"
+													stroke="currentColor"
+													strokeWidth="1.6"
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													fill="none"
+												/>
+											</svg>
+										) : null }
+									</span>
+									<span className="pl-setup-step__text">
+										<span className="pl-setup-step__title">
+											{ step.title }
+										</span>
+										{ step.description && (
+											<span className="pl-setup-step__description">
+												{ step.description }
+											</span>
+										) }
+									</span>
+								</li>
+							) ) }
+						</ol>
+
+						{ content.note && (
+							<p className="pl-empty__note">{ content.note }</p>
+						) }
+
+						<a className="pl-btn-primary" href={ ctaUrl }>
+							{ content.cta.label }
 						</a>
 
-						<button type="button" className="pl-empty__link">
-							Import costs from CSV
-						</button>
+						{ content.secondaryLink && (
+							<a
+								className="pl-empty__link"
+								href={ content.secondaryLink.href }
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{ content.secondaryLink.label }
+							</a>
+						) }
 					</div>
 				</div>
 			</div>

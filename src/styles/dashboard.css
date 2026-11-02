@@ -1162,44 +1162,127 @@
 	font-size: 13px;
 	color: var(--pl-color-muted);
 	line-height: 1.6;
-	margin: 0 0 24px;
+	margin: 0 0 20px;
 	max-width: 320px;
 }
 
-.pl-empty__cta {
+/* Numbered setup steps — current/upcoming show their position number
+   (CSS counter, not hardcoded per-item so reordering the array in JS
+   never desyncs the visible number from the real position), completed
+   swaps the number for a checkmark via the same marker element. */
+.pl-setup-steps {
+	counter-reset: pl-setup-step;
+	list-style: none;
+	margin: 0 0 22px;
+	padding: 0;
 	width: 100%;
-	font-family: var(--pl-font-mono);
-	font-size: 12px;
-	font-weight: 500;
-	color: var(--pl-color-text);
-	background: var(--pl-color-accent);
-	border: 1px solid var(--pl-color-accent);
-	border-radius: var(--pl-radius);
-	padding: 10px 20px;
-	cursor: pointer;
-	margin-bottom: 12px;
-	transition: background 0.15s;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	text-align: left;
 }
 
-.pl-empty__cta:hover {
-	background: var(--pl-color-accent-strong);
+.pl-setup-step {
+	counter-increment: pl-setup-step;
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+.pl-setup-step__marker {
+	flex: 0 0 auto;
+	width: 20px;
+	height: 20px;
+	margin-top: 1px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--pl-font-mono);
+	font-size: 11px;
+	font-weight: 600;
+	border: 1px solid var(--pl-color-border);
+	color: var(--pl-color-muted);
+	background: var(--pl-color-surface);
+}
+
+.pl-setup-step__marker::before {
+	content: counter(pl-setup-step);
+}
+
+.pl-setup-step--current .pl-setup-step__marker {
+	border-color: var(--pl-color-text);
+	color: var(--pl-color-text);
+}
+
+.pl-setup-step--completed .pl-setup-step__marker {
+	background: var(--pl-color-profit);
+	border-color: var(--pl-color-profit);
+	color: #fff;
+}
+
+.pl-setup-step--completed .pl-setup-step__marker::before {
+	content: none;
+}
+
+.pl-setup-step__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-top: 1px;
+}
+
+.pl-setup-step__title {
+	font-family: var(--pl-font-sans);
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--pl-color-text);
+}
+
+.pl-setup-step--upcoming .pl-setup-step__title {
+	color: var(--pl-color-muted);
+	font-weight: 500;
+}
+
+.pl-setup-step--completed .pl-setup-step__title {
+	color: var(--pl-color-muted);
+	font-weight: 500;
+}
+
+.pl-setup-step__description {
+	font-family: var(--pl-font-mono);
+	font-size: 11px;
+	color: var(--pl-color-muted);
+}
+
+.pl-empty__note {
+	font-family: var(--pl-font-sans);
+	font-size: 12px;
+	color: var(--pl-color-muted);
+	line-height: 1.6;
+	margin: -8px 0 20px;
+	text-align: left;
 }
 
 .pl-empty__link {
+	margin-top: 12px;
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
 	color: var(--pl-color-muted);
 	text-decoration: none;
 	border-bottom: 1px solid #d0d9e0;
 	background: none;
-	border-top: none;
-	border-left: none;
-	border-right: none;
 	cursor: pointer;
 }
 
-.pl-empty__link:hover {
+.pl-empty__link:hover,
+.pl-empty__link:focus-visible {
 	color: var(--pl-color-text);
+}
+
+.pl-empty__link:focus-visible {
+	outline: 2px solid var(--pl-color-text);
+	outline-offset: 2px;
 }
 
 /* ── Notice states (error, no-orders) ─────────────────────────────────── */
@@ -1424,7 +1507,14 @@
 	gap: 8px;
 }
 
-.pl-pro-modal__cta-primary {
+/* Shared primary-button style — any `<a>` or `<button>` meant to look
+   like this dashboard's one primary CTA (ProUpgradeModal's "Upgrade to
+   Pro", EmptyState's setup CTA, and any future one) uses this single
+   class instead of each component inventing/duplicating its own. Started
+   as ProUpgradeModal-only (`.pl-pro-modal__cta-primary`); generalized so
+   EmptyState doesn't have to couple itself to Pro's modal component to
+   get the same look. */
+.pl-btn-primary {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1443,13 +1533,13 @@
 	box-sizing: border-box;
 }
 
-.pl-pro-modal__cta-primary:hover {
+.pl-btn-primary:hover {
 	background: var(--pl-color-accent-strong);
 	/* Explicit, not redundant: WP admin's own CSS (both the base
 	   admin-color scheme CSS and this environment's "Modern" color
 	   scheme, colors.min.css) ships `a:hover { color: ... }` — an
 	   element+pseudo-class selector, specificity (0,0,1,1), which beats
-	   this component's own un-pseudo-classed `.pl-pro-modal__cta-primary
+	   this component's own un-pseudo-classed `.pl-btn-primary
 	   { color: var(--pl-color-text) }` base rule (0,0,1,0) during the
 	   hover state specifically. Confirmed in the browser (not guessed):
 	   without this line, computed color on hover was rgb(24, 58, 214) —
@@ -1457,6 +1547,11 @@
 	   wp-admin/css/colors/modern/colors.min.css. This selector's own
 	   specificity (0,0,2,0) is what actually wins. */
 	color: var(--pl-color-text);
+}
+
+.pl-btn-primary:focus-visible {
+	outline: 2px solid var(--pl-color-text);
+	outline-offset: 2px;
 }
 
 .pl-pro-modal__cta-secondary {

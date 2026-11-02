@@ -153,7 +153,7 @@ export default function Dashboard() {
 		return (
 			<>
 				{ switcher }
-				<EmptyState />
+				<EmptyState setupStatus={ data.setup_status } />
 			</>
 		);
 	}
