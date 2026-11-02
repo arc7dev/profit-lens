@@ -149,6 +149,14 @@ class ProfitLens_Assets {
 				// actually installed/uninstalled in the test run (see
 				// tests/test-pro-status.php).
 				'proStatus'         => self::build_pro_status( $pro_installed, $pro_licensed ),
+				// For EmptyState.jsx's setup CTAs — built here with
+				// admin_url() rather than assembled from path fragments in
+				// JS, same reasoning as every other URL already in this
+				// array: the admin path prefix (subdirectory installs,
+				// multisite) is a PHP-side concern this plugin shouldn't
+				// re-derive in the browser.
+				'cogsSettingsUrl'   => admin_url( 'admin.php?page=wc-settings&tab=advanced&section=features' ),
+				'productsUrl'       => admin_url( 'edit.php?post_type=product' ),
 			)
 		);
 

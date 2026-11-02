@@ -14,12 +14,12 @@ import { Modal } from '@wordpress/components';
  * still satisfies Modal's accessibility requirement (every modal needs a
  * title for assistive tech) without rendering one.
  *
- * @param {Object}      props
- * @param {boolean}     props.isOpen
- * @param {() => void}  props.onClose
- * @param {string}      props.feature Short name of the gated feature, e.g.
- *                                     "Ads Integration" — used in the
- *                                     "Unlock {feature}" subtitle.
+ * @param {Object}     props
+ * @param {boolean}    props.isOpen
+ * @param {() => void} props.onClose
+ * @param {string}     props.feature Short name of the gated feature, e.g.
+ *                                   "Ads Integration" — used in the
+ *                                   "Unlock {feature}" subtitle.
  */
 export default function ProUpgradeModal( { isOpen, onClose, feature } ) {
 	if ( ! isOpen ) {
@@ -58,17 +58,15 @@ export default function ProUpgradeModal( { isOpen, onClose, feature } ) {
 			</svg>
 
 			<div className="pl-pro-modal__title">Profit Lens Pro</div>
-			<div className="pl-pro-modal__subtitle">
-				Unlock { feature }
-			</div>
+			<div className="pl-pro-modal__subtitle">Unlock { feature }</div>
 			<p className="pl-pro-modal__copy">
-				Get CSV exports, ad spend tracking, and deeper analytics to
-				make smarter decisions about your store.
+				Get CSV exports, ad spend tracking, and deeper analytics to make
+				smarter decisions about your store.
 			</p>
 
 			<div className="pl-pro-modal__actions">
 				<a
-					className="pl-pro-modal__cta-primary"
+					className="pl-btn-primary"
 					href="https://arc7.dev/profit-lens/pro"
 					target="_blank"
 					rel="noreferrer"

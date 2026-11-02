@@ -298,9 +298,16 @@ export function getMockSummary( rangeKey = '30d' ) {
  * "empty" response — product costs not configured yet.
  *
  * @param {'7d'|'30d'|'month'|'custom'} rangeKey
+ * @param {'cogs_disabled'|'no_costs'}  setupStatus Matches
+ *                                                  ProfitLens_REST_Controller::build_empty_response()'s `setup_status` —
+ *                                                  defaults to 'no_costs' (COGS on, nothing priced yet), the more common
+ *                                                  real-world case; pass 'cogs_disabled' to preview the other state.
  * @return {Object} Response with status "empty" and the same shape as the REST endpoint.
  */
-export function getMockEmptySummary( rangeKey = '30d' ) {
+export function getMockEmptySummary(
+	rangeKey = '30d',
+	setupStatus = 'no_costs'
+) {
 	const range = RANGES[ rangeKey ] || RANGES[ '30d' ];
 
 	return {
@@ -311,6 +318,7 @@ export function getMockEmptySummary( rangeKey = '30d' ) {
 			before: range.before,
 		},
 		status: 'empty',
+		setup_status: setupStatus,
 		kpis: null,
 		insight: null,
 		cost_coverage: {
