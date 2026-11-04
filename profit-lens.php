@@ -9,6 +9,7 @@
  * Version:            1.1.0
  * Requires at least:  6.4
  * Requires PHP:       7.4
+ * Requires Plugins:   woocommerce
  * Author:             Arc7
  * Author URI:         https://arc7.dev
  * License:            GPLv2 or later
