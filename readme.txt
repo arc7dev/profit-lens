@@ -87,7 +87,7 @@ WooCommerce ships this feature turned off. Until it's on, WooCommerce doesn't st
 
 = Does Profit Lens support multiple currencies? =
 
-Profit Lens assumes all orders are in your store's base currency. If your store charges orders in more than one currency, totals will mix currencies and won't be accurate.
+Profit Lens calculates profit in your store's base currency only, and doesn't convert between currencies. If an order was placed in a different currency — for example, your store changed its base currency at some point, or you use a plugin that charges orders in more than one currency — that order is left out of your totals, and the dashboard tells you how many orders and how much revenue were excluded, in their own currency.
 
 == Screenshots ==
 
@@ -97,6 +97,7 @@ Profit Lens assumes all orders are in your store's base currency. If your store 
 
 = Unreleased =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.
+* Fixed: orders in a currency other than your store's base currency are now excluded from profit totals instead of being mixed in — the dashboard shows how many were excluded and their amount.
 
 = 1.1.0 =
 * Added: Product rows in the profit table now open a detailed view when Profit Lens Pro is active.

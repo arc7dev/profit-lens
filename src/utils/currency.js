@@ -70,3 +70,44 @@ export function formatCurrency( amount, decimals ) {
 	// Dashboard.jsx this replaces).
 	return isNegative ? `−${ formatted }` : formatted;
 }
+
+/**
+ * Formats an amount in a currency OTHER than the store's own — issue #42's
+ * currency-exclusion notice, the one place this dashboard shows a figure
+ * that isn't in the store's base currency. formatCurrency() above can't do
+ * this: it's hardwired to WooCommerce's configured symbol/separators for
+ * the store's ONE currency (window.profitLensData), which has no symbol or
+ * separator rules for any other ISO code. Intl.NumberFormat does, for any
+ * valid currency code, without this plugin maintaining its own table of
+ * currency symbols/decimal conventions.
+ *
+ * @param {number} amount       Unsigned amount, in `currencyCode`.
+ * @param {string} currencyCode ISO 4217 code, e.g. "EUR" — same value
+ *                              WooCommerce's $order->get_currency() and
+ *                              this endpoint's currency_exclusions.items[].currency
+ *                              already use.
+ * @return {string} e.g. "€1,234.50", "CA$80.00" — formatted per the
+ *                   currency's own real-world convention, not the store's.
+ */
+export function formatForeignCurrency( amount, currencyCode ) {
+	const locale = window.profitLensData?.locale || 'en-US';
+
+	try {
+		return new Intl.NumberFormat( locale, {
+			style: 'currency',
+			currency: currencyCode,
+		} ).format( amount );
+	} catch ( error ) {
+		// An invalid/unrecognized locale (malformed get_user_locale()
+		// output on some site, for instance) throws a RangeError —
+		// Intl.NumberFormat gives no "unsupported locale" fallback of
+		// its own, unlike an unsupported currency code, which it
+		// already degrades gracefully for instead of throwing. Retry
+		// once with the same fallback formatCurrency() above never
+		// needs, since it doesn't go through Intl at all.
+		return new Intl.NumberFormat( 'en-US', {
+			style: 'currency',
+			currency: currencyCode,
+		} ).format( amount );
+	}
+}

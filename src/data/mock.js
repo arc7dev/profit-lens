@@ -236,13 +236,44 @@ const RANGES = {
 };
 
 /**
+ * No exclusions — the common case, and what every existing call site gets
+ * by default without having to know this field exists.
+ */
+const CURRENCY_EXCLUSIONS_NONE = {
+	base_currency: 'USD',
+	items: [],
+};
+
+/**
+ * Issue #42 — one order in EUR, two in GBP, neither converted into the
+ * mock's USD totals above (matching the real engine: an excluded order's
+ * revenue never reaches kpis.revenue.amount). For
+ * getMockSummary( '30d', CURRENCY_EXCLUSIONS_EXAMPLE ) — visual QA of
+ * CurrencyExclusionNotice with more than one currency at once.
+ */
+export const CURRENCY_EXCLUSIONS_EXAMPLE = {
+	base_currency: 'USD',
+	items: [
+		{ currency: 'EUR', orders: 1, revenue: 84.5 },
+		{ currency: 'GBP', orders: 2, revenue: 143.2 },
+	],
+};
+
+/**
  * Builds a "ready" response with the same shape as the REST endpoint, for
  * a given range.
  *
  * @param {'7d'|'30d'|'month'|'custom'} rangeKey
+ * @param {Object}                      currencyExclusions Same shape as
+ *                                                         the real `currency_exclusions` field — defaults to none. Pass
+ *                                                         CURRENCY_EXCLUSIONS_EXAMPLE (exported above) to preview
+ *                                                         CurrencyExclusionNotice.
  * @return {Object} Response with the same shape as GET /profit-lens/v1/summary.
  */
-export function getMockSummary( rangeKey = '30d' ) {
+export function getMockSummary(
+	rangeKey = '30d',
+	currencyExclusions = CURRENCY_EXCLUSIONS_NONE
+) {
 	const range = RANGES[ rangeKey ] || RANGES[ '30d' ];
 
 	const chartSeries = range.days.map( ( label, i ) => ( {
@@ -291,6 +322,7 @@ export function getMockSummary( rangeKey = '30d' ) {
 				margin_pct: range.margin_pct,
 			},
 		},
+		currency_exclusions: currencyExclusions,
 	};
 }
 
@@ -335,6 +367,52 @@ export function getMockEmptySummary(
 		products_meta: {
 			total: 0,
 			totals: { units: 0, revenue: 0, cost: 0, profit: 0, margin_pct: 0 },
+		},
+		currency_exclusions: CURRENCY_EXCLUSIONS_NONE,
+	};
+}
+
+/**
+ * Issue #42's edge case: status "ready" (costs ARE configured), but
+ * orders_count is 0 because every order in the period was excluded for
+ * being in another currency — not because it was genuinely a quiet
+ * period. Dashboard.jsx reads orders_count === 0 to decide whether to
+ * show NoOrdersState at all; this mock exists to preview NoOrdersState's
+ * currency-exclusion branch without needing real orders seeded in
+ * another currency.
+ *
+ * @param {'7d'|'30d'|'month'|'custom'} rangeKey
+ * @return {Object} Response with the same shape as GET /profit-lens/v1/summary.
+ */
+export function getMockAllOrdersExcludedSummary( rangeKey = '30d' ) {
+	const range = RANGES[ rangeKey ] || RANGES[ '30d' ];
+
+	return {
+		range: {
+			key: rangeKey,
+			label: range.label,
+			after: range.after,
+			before: range.before,
+		},
+		status: 'ready',
+		kpis: {
+			net_profit: { amount: 0, currency: 'USD', change_pct: null },
+			net_margin_pct: 0,
+			revenue: { amount: 0, currency: 'USD', orders_count: 0 },
+			total_costs: { amount: 0, currency: 'USD' },
+		},
+		insight: null,
+		cost_coverage: COST_COVERAGE,
+		chart: { series: [] },
+		cost_breakdown: [],
+		products: [],
+		products_meta: {
+			total: 0,
+			totals: { units: 0, revenue: 0, cost: 0, profit: 0, margin_pct: 0 },
+		},
+		currency_exclusions: {
+			base_currency: 'USD',
+			items: [ { currency: 'EUR', orders: 4, revenue: 612.75 } ],
 		},
 	};
 }
