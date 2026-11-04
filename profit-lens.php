@@ -15,7 +15,7 @@
  * License URI:        https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:        profit-lens
  * Domain Path:        /languages
- * WC requires at least: 8.0
+ * WC requires at least: 10.3
  * WC tested up to:      10.3
  *
  * @package ProfitLens

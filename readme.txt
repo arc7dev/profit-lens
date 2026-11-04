@@ -4,73 +4,99 @@ Tags: woocommerce, profit, analytics, cogs, dashboard
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-WC requires at least: 8.0
+WC requires at least: 10.3
 WC tested up to: 10.3
 Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-See your store's real profit, not just sales — right inside WooCommerce.
+See what your WooCommerce store really earns: net profit and margin after product costs, payment fees, shipping and refunds.
 
 == Description ==
 
-WooCommerce shows you revenue. Profit Lens shows you what's left after the
-real costs: product cost, payment gateway fees, shipping, and refunds.
+Most WooCommerce stores know how much they sell, but not how much they earn. Without the real margin of each product, there's no way to tell which products to push and which ones are quietly costing you money.
 
-= What Profit Lens does (free, self-hosted, no external account) =
+Profit Lens turns your WooCommerce orders into a profit dashboard. It takes your revenue and subtracts product costs, payment gateway fees, shipping and refunds, so you see your net profit and margin for any period — calculated automatically from the orders you already have.
 
-* Net profit and net margin for any date range, calculated from the Cost of
-  Goods field already built into WooCommerce (10.3+).
-* Per-order and per-product profit breakdown.
-* Cost breakdown: product cost, gateway fees, shipping, refunds.
-* Cost coverage: how much of your revenue is backed by a known product
-  cost, so you know how much to trust the profit number.
-* Everything is calculated on your server. Nothing about your store or
-  your orders is sent anywhere.
+= How it works =
 
-= What's in Profit Lens Pro =
+Profit Lens uses the Cost of Goods Sold (COGS) feature built into WooCommerce 10.3 and later. Turn it on, add the unit cost to your products, and the dashboard does the rest. You don't need to cost every product on day one: the dashboard shows how much of your revenue has a known cost, so you always know how far to trust the numbers.
 
-Profit after ad spend and ROAS by campaign, once you connect a Meta Ads or
-Google Ads account — available at [arc7.dev](https://arc7.dev). The free
-plugin in this repository is fully functional on its own; Pro adds
-analytics that depend on an external ad account, not features held back
-from the free version.
+= What you get =
+
+* **Net profit and margin** for any date range, including custom ranges.
+* **Profit by order and by product**, in a table you can sort, search and page through.
+* **Cost breakdown**: product costs, payment gateway fees, shipping and refunds.
+* **Cost coverage**: the share of your revenue backed by a known product cost.
+* **Costs locked at the time of sale**: each order keeps the product cost it had when it first reached Completed or Processing status, so editing a cost today doesn't rewrite past profit. (Applies to orders that reach that status after Profit Lens is installed.)
+* **Profit over time** chart.
+* **Automatic summary** that reads your numbers for you: average margin, most profitable product and more.
+
+= Your data stays on your server =
+
+All calculations run inside your WordPress site. Profit Lens doesn't send your store or order data anywhere, and the free plugin makes no external requests.
+
+= Profit Lens Pro (optional) =
+
+Profit Lens works fully on its own. Profit Lens Pro is a separate add-on for stores that advertise and want to see profit after ad spend:
+
+* Import ad spend from a CSV file, or sync it directly from Google Ads.
+* Profit and margin after ad spend.
+* Total ROAS (revenue per dollar spent on ads).
+* Ad spend broken down by platform.
+* Meta Ads sync — coming soon.
+* Export the product table to CSV.
+* Detailed cost and profit view for each product.
+* Control which WordPress users can see the dashboard.
+
+Learn more at [arc7.dev/profit-lens/pro](https://arc7.dev/profit-lens/pro?utm_source=wporg&utm_medium=readme).
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/profit-lens`, or install
-   through the WordPress plugins screen directly.
-2. Activate the plugin.
-3. Make sure WooCommerce is active and your products have a cost set
-   (Product data → General → Cost of goods, WooCommerce 10.3+).
-4. Go to WooCommerce → Profit Lens.
+1. Install Profit Lens from **Plugins → Add New**, or upload the plugin folder to `/wp-content/plugins/`, and activate it.
+2. Make sure you're running WooCommerce 10.3 or later.
+3. Turn on product costs: go to **WooCommerce → Settings → Advanced → Features**, check **Cost of Goods Sold** and save. (It's off by default.)
+4. Add a cost to your products from each product's edit screen, including variations. Start with your best sellers if you have a large catalog.
+5. Open **WooCommerce → Profit Lens**. If something is still missing, the dashboard will tell you which step to complete.
 
 == Frequently Asked Questions ==
 
-= Does this send my store data anywhere? =
+= Do I need to add a cost to every product? =
 
-No. All calculation happens on your own server, using WooCommerce's REST
-API and database. Profit Lens Free makes no external requests — including
-for fonts, which are bundled with the plugin instead of loaded from Google
-Fonts.
+No. Products without a cost are counted at zero cost, so total profit will read higher than reality until costs are added. The product table flags them, and the dashboard shows what share of your revenue has a known cost.
 
-= Do I need Meta Ads or Google Ads to use this? =
+= What happens to past orders if I change a product's cost? =
 
-No. Everything in the free plugin works from data WooCommerce already has.
-Connecting an ad account is only needed for the Pro features (profit after
-ad spend, ROAS by campaign).
+Orders that reached Completed or Processing status after Profit Lens was installed keep the cost they had at that time, so their profit doesn't change. Orders that already had one of those statuses before installing Profit Lens use the product's current cost.
 
-= What if some of my products don't have a cost set? =
+= Which orders are counted? =
 
-Profit Lens still shows you profit for the products that do, and tells you
-what share of your revenue is covered by a known cost — so you can see at
-a glance how much to trust the number instead of assuming it's complete.
+Orders with the Completed or Processing status.
+
+= Does Profit Lens send my store data anywhere? =
+
+No. Everything is calculated on your own server, and the free plugin makes no external requests, not even for fonts.
+
+= Do I need a Google Ads or Meta Ads account? =
+
+No. The free plugin doesn't use ad data at all. In Profit Lens Pro, ad spend can be imported from a CSV file or synced from Google Ads.
+
+= Why does the dashboard ask me to enable Cost of Goods Sold? =
+
+WooCommerce ships this feature turned off. Until it's on, WooCommerce doesn't store product costs, so there's nothing to calculate profit from. See step 3 under Installation.
+
+= Does Profit Lens support multiple currencies? =
+
+Profit Lens assumes all orders are in your store's base currency. If your store charges orders in more than one currency, totals will mix currencies and won't be accurate.
 
 == Screenshots ==
 
 1. Dashboard — net profit, cost breakdown, and profit by product.
 
 == Changelog ==
+
+= Unreleased =
+* Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.
 
 = 1.1.0 =
 * Added: Product rows in the profit table now open a detailed view when Profit Lens Pro is active.
