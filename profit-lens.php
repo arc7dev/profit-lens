@@ -6,16 +6,17 @@
  *                      sales — by subtracting gateway fees, shipping, and refunds
  *                      from your product cost. 100% self-hosted, your data never
  *                      leaves your site.
- * Version:            1.1.0
+ * Version:            1.2.0
  * Requires at least:  6.4
  * Requires PHP:       7.4
+ * Requires Plugins:   woocommerce
  * Author:             Arc7
  * Author URI:         https://arc7.dev
  * License:            GPLv2 or later
  * License URI:        https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:        profit-lens
  * Domain Path:        /languages
- * WC requires at least: 8.0
+ * WC requires at least: 10.3
  * WC tested up to:      10.3
  *
  * @package ProfitLens
@@ -55,7 +56,7 @@ add_action(
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-define( 'PROFITLENS_VERSION', '1.1.0' );
+define( 'PROFITLENS_VERSION', '1.2.0' );
 define( 'PROFITLENS_PLUGIN_FILE', __FILE__ );
 define( 'PROFITLENS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PROFITLENS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
