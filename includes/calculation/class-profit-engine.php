@@ -246,7 +246,7 @@ class ProfitLens_Profit_Engine {
 		$products_totals = $this->sum_products( $products );
 
 		return array(
-			'kpis'           => array(
+			'kpis'                => array(
 				'net_profit'     => array(
 					'amount'     => $profit,
 					'currency'   => $currency,
@@ -263,15 +263,16 @@ class ProfitLens_Profit_Engine {
 					'currency' => $currency,
 				),
 			),
-			'insight'        => $this->format_insight( $data ),
-			'cost_coverage'  => $this->format_cost_coverage( $data ),
-			'chart'          => array( 'series' => $this->format_chart_series( $data, $after, $before ) ),
-			'cost_breakdown' => $this->format_cost_breakdown( $data ),
-			'products'       => $products,
-			'products_meta'  => array(
+			'insight'             => $this->format_insight( $data ),
+			'cost_coverage'       => $this->format_cost_coverage( $data ),
+			'chart'               => array( 'series' => $this->format_chart_series( $data, $after, $before ) ),
+			'cost_breakdown'      => $this->format_cost_breakdown( $data ),
+			'products'            => $products,
+			'products_meta'       => array(
 				'total'  => count( $products ),
 				'totals' => $products_totals,
 			),
+			'currency_exclusions' => $this->format_currency_exclusions( $data ),
 		);
 	}
 
@@ -309,6 +310,16 @@ class ProfitLens_Profit_Engine {
 		$revenue_snapshot_backed = 0.0;
 		$orders_count            = 0;
 
+		// Issue #42: product costs and KPI totals are all implicitly in the
+		// store's base currency — WooCommerce doesn't store an exchange
+		// rate per order, so an order placed in a different currency can't
+		// be converted, only excluded. Resolved once per aggregate() call
+		// (not per order): get_woocommerce_currency() is the same global
+		// option read $currency = get_woocommerce_currency() in
+		// get_summary() already makes, not a new query.
+		$base_currency       = get_woocommerce_currency();
+		$currency_exclusions = array();
+
 		foreach ( $this->all_components() as $component ) {
 			$cost_totals[ $component->get_key() ] = 0.0;
 		}
@@ -328,11 +339,53 @@ class ProfitLens_Profit_Engine {
 		$page       = 1;
 
 		do {
-			$orders        = $this->get_counted_orders( $after, $before, $page, $batch_size );
-			$batch_count   = count( $orders );
-			$orders_count += $batch_count;
+			$orders      = $this->get_counted_orders( $after, $before, $page, $batch_size );
+			$batch_count = count( $orders );
 
 			foreach ( $orders as $order ) {
+				// get_currency() reads the order's own already-loaded
+				// currency prop/column — confirmed live (HPOS active in
+				// this environment): 50 calls on already-loaded orders,
+				// 0 additional queries. Checked before anything else in
+				// this loop so an excluded order never reaches
+				// resolve_line_items() (the expensive per-order work) or
+				// any cost component at all.
+				//
+				// Refunds don't need a currency check of their own:
+				// ProfitLens_Cost_Component_Refunds::calculate() only
+				// ever reads $order->get_total_refunded() on this same
+				// parent order object (get_counted_orders() locks
+				// `type` to 'shop_order', so a shop_order_refund record
+				// is never iterated here as if it were its own order) —
+				// `continue`-ing past an excluded order skips that call
+				// entirely, so its refund is excluded for free, by
+				// construction, not by a separate check. Confirmed live
+				// too: a real refund's own get_currency() matches its
+				// parent order's.
+				$order_currency = $order->get_currency();
+
+				if ( $order_currency !== $base_currency ) {
+					if ( ! isset( $currency_exclusions[ $order_currency ] ) ) {
+						$currency_exclusions[ $order_currency ] = array(
+							'orders'  => 0,
+							'revenue' => 0.0,
+						);
+					}
+
+					++$currency_exclusions[ $order_currency ]['orders'];
+					// Same get_order_revenue() the base-currency path and
+					// the revenue KPI both use — not $order->get_total()
+					// or any other figure — so the amount shown next to
+					// an excluded order is directly comparable to the
+					// Revenue KPI a merchant already understands, not a
+					// second, differently-defined number.
+					$currency_exclusions[ $order_currency ]['revenue'] += $this->get_order_revenue( $order );
+
+					continue;
+				}
+
+				++$orders_count;
+
 				$order_revenue = $this->get_order_revenue( $order );
 				$revenue      += $order_revenue;
 
@@ -508,6 +561,8 @@ class ProfitLens_Profit_Engine {
 			'revenue_covered'         => $revenue_covered,
 			'revenue_uncovered'       => $revenue_uncovered,
 			'revenue_snapshot_backed' => $revenue_snapshot_backed,
+			'base_currency'           => $base_currency,
+			'currency_exclusions'     => $currency_exclusions,
 		);
 	}
 
@@ -720,6 +775,35 @@ class ProfitLens_Profit_Engine {
 		}
 
 		return $breakdown;
+	}
+
+	/**
+	 * Issue #42: orders in a currency other than the store's base currency
+	 * (get_woocommerce_currency()) are excluded from every figure in this
+	 * response — WooCommerce doesn't store an exchange rate per order, so
+	 * there's no honest way to fold them into a single-currency total.
+	 * Always present with this shape (base_currency + items, items === []
+	 * when nothing was excluded) rather than sometimes omitted — one shape
+	 * for the frontend to handle, not two.
+	 *
+	 * @param array $data
+	 * @return array{base_currency:string,items:array<int,array{currency:string,orders:int,revenue:float}>}
+	 */
+	private function format_currency_exclusions( array $data ) {
+		$items = array();
+
+		foreach ( $data['currency_exclusions'] as $currency => $totals ) {
+			$items[] = array(
+				'currency' => $currency,
+				'orders'   => $totals['orders'],
+				'revenue'  => round( $totals['revenue'], 2 ),
+			);
+		}
+
+		return array(
+			'base_currency' => $data['base_currency'],
+			'items'         => $items,
+		);
 	}
 
 	/**

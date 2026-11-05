@@ -95,7 +95,7 @@ class ProfitLens_REST_Controller {
 		$range = $this->get_range_bounds( $request );
 
 		if ( 'empty' === $demo_status ) {
-			return rest_ensure_response( $this->build_empty_response( $range ) );
+			return rest_ensure_response( $this->build_empty_response( $range, null, $this->get_setup_status(), null ) );
 		}
 
 		if ( 'ready' !== $demo_status && null !== $demo_status ) {
@@ -114,7 +114,8 @@ class ProfitLens_REST_Controller {
 		}
 
 		try {
-			$summary = ProfitLens_Profit_Engine::create_default()->get_summary( $range['after'], $range['before'] );
+			$engine  = ProfitLens_Profit_Engine::create_default();
+			$summary = $engine->get_summary( $range['after'], $range['before'] );
 		} catch ( \Throwable $e ) {
 			// Never surface $e->getMessage()/getTrace() to the client — it
 			// can leak file paths, table names, or other internals. Log
@@ -133,10 +134,41 @@ class ProfitLens_REST_Controller {
 		// so the contract omits them rather than showing a number nobody
 		// should trust.
 		if ( 0 === $summary['cost_coverage']['products_with_cost'] ) {
-			return rest_ensure_response( $this->build_empty_response( $range, $summary['cost_coverage'] ) );
+			// Distinguishes "COGS feature off" from "COGS on, zero products
+			// priced" — both collapse to the same products_with_cost===0
+			// signal above, so is_available() is the only way to tell them
+			// apart. Costs nothing extra: it's a plain feature-flag read
+			// (served from WP's already-loaded options cache, measured at
+			// 0 additional queries), not a catalog scan, and
+			// get_product_cost_component()/get_cost_source() are already
+			// public accessors onto the exact instance get_summary() above
+			// just used — no second engine/cost-source instantiation.
+			$setup_status = $engine->get_product_cost_component()->get_cost_source()->is_available()
+				? 'no_costs'
+				: 'cogs_disabled';
+
+			return rest_ensure_response( $this->build_empty_response( $range, $summary['cost_coverage'], $setup_status, $summary['currency_exclusions'] ) );
 		}
 
 		return rest_ensure_response( $this->build_ready_response( $range, $summary ) );
+	}
+
+	/**
+	 * Real is_available() check, used only by the demo-filter 'empty'
+	 * path (class-rest-controller.php's own `profitlens_demo_status`
+	 * override, see this file's top docblock) — that path never calls
+	 * get_summary() at all, so there's no already-built engine instance
+	 * to reuse the way the real calculation path does. Still real data,
+	 * not faked: is_available() reflects the actual WooCommerce feature
+	 * state regardless of the demo override forcing kpis/products/etc.
+	 * to their empty shape.
+	 *
+	 * @return string 'cogs_disabled' | 'no_costs'.
+	 */
+	private function get_setup_status() {
+		$cost_source = ProfitLens_Profit_Engine::create_default()->get_product_cost_component()->get_cost_source();
+
+		return $cost_source->is_available() ? 'no_costs' : 'cogs_disabled';
 	}
 
 	/**
@@ -171,15 +203,23 @@ class ProfitLens_REST_Controller {
 	 *                                   the merchant than hiding the count).
 	 *                                   Null only for the demo-filter path,
 	 *                                   which has no real catalog to report.
+	 * @param string     $setup_status  'cogs_disabled' | 'no_costs' — which
+	 *                                   onboarding step EmptyState.jsx
+	 *                                   should show.
+	 * @param array|null $currency_exclusions Issue #42 — real exclusions,
+	 *                                   when known. Null only for the
+	 *                                   demo-filter path, same reasoning
+	 *                                   as $cost_coverage above.
 	 * @return array
 	 */
-	private function build_empty_response( array $range, $cost_coverage = null ) {
+	private function build_empty_response( array $range, $cost_coverage, $setup_status, $currency_exclusions ) {
 		return array(
-			'range'          => $range['meta'],
-			'status'         => 'empty',
-			'kpis'           => null,
-			'insight'        => null,
-			'cost_coverage'  => $cost_coverage ?? array(
+			'range'               => $range['meta'],
+			'status'              => 'empty',
+			'setup_status'        => $setup_status,
+			'kpis'                => null,
+			'insight'             => null,
+			'cost_coverage'       => $cost_coverage ?? array(
 				'products_with_cost'   => 0,
 				'products_total'       => 0,
 				'pct'                  => 0.0,
@@ -187,10 +227,10 @@ class ProfitLens_REST_Controller {
 				'revenue_uncovered'    => 0.0,
 				'snapshot_covered_pct' => 0.0,
 			),
-			'chart'          => array( 'series' => array() ),
-			'cost_breakdown' => array(),
-			'products'       => array(),
-			'products_meta'  => array(
+			'chart'               => array( 'series' => array() ),
+			'cost_breakdown'      => array(),
+			'products'            => array(),
+			'products_meta'       => array(
 				'total'  => 0,
 				'totals' => array(
 					'units'      => 0,
@@ -199,6 +239,10 @@ class ProfitLens_REST_Controller {
 					'profit'     => 0.0,
 					'margin_pct' => 0.0,
 				),
+			),
+			'currency_exclusions' => $currency_exclusions ?? array(
+				'base_currency' => get_woocommerce_currency(),
+				'items'         => array(),
 			),
 		);
 	}

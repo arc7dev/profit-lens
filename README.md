@@ -2,18 +2,37 @@
 
 Profit analytics plugin for WooCommerce, by [Arc7](https://arc7.dev).
 
-Shows a store's real profit — not just revenue — by subtracting product
-cost (COGS), payment gateway fees, shipping, and refunds. Everything free
-runs from data already inside WooCommerce, calculated on your own server.
-See `readme.txt` for the WordPress.org listing copy and the free/pro split.
+Most WooCommerce stores know how much they sell, but not how much they
+earn. Profit Lens turns your orders into a profit dashboard: it takes your
+revenue and subtracts product cost (COGS), payment gateway fees, shipping,
+and refunds, so you see net profit and margin for any period — calculated
+from data already inside WooCommerce, on your own server. Optional
+[Profit Lens Pro](https://arc7.dev/profit-lens/pro?utm_source=github&utm_medium=readme)
+adds profit after ad spend for stores that advertise. See `readme.txt` for
+the full WordPress.org listing copy.
 
 This file is for people working on the plugin itself.
+
+## Quick start for store owners
+
+Not developing the plugin? Install it and turn on product costs:
+
+1. Install Profit Lens from **Plugins → Add New** in your site, or
+   download it from [WordPress.org](https://wordpress.org/plugins/profit-lens/).
+2. Make sure you're running WooCommerce 10.3 or later.
+3. Go to **WooCommerce → Settings → Advanced → Features**, check **Cost of
+   Goods Sold**, and save — it's off by default.
+4. Add a cost to your products (each product's edit screen, including
+   variations).
+5. Open **WooCommerce → Profit Lens**.
 
 ## Requirements
 
 - WordPress 6.4+
 - PHP 7.4+
-- WooCommerce 8.0+
+- WooCommerce 10.3+ (the plugin reads product cost from WooCommerce's
+  native Cost of Goods Sold field, added in 10.3 — it has nothing to
+  calculate profit from on an older version)
 - Node.js 20+ (22.9 pinned via `volta`) and npm, for the dashboard build
 - Composer, for dev tooling only (PHPUnit, PHPCS) — **not** required at
   runtime; the plugin ships its own autoloader (see
@@ -101,11 +120,13 @@ PRs are checked automatically via GitHub Actions (PHPUnit + build sync).
 
 ## Free vs. Pro
 
-Everything in this repository is fully functional on its own — no
-trialware, no feature gating (required for WordPress.org compliance,
-Guideline 5). Pro (ad spend profit, ROAS by campaign) requires connecting
-a Meta Ads or Google Ads account and is sold and served from
-[arc7.dev](https://arc7.dev), not from this repo.
+All code in this repository is fully functional. Pro features live in a
+separate plugin, [profit-lens-pro](https://github.com/arc7dev/profit-lens-pro)
+(private, sold and served from [arc7.dev](https://arc7.dev)) — ad spend
+imported from a CSV or synced from Google Ads, profit after ad spend,
+ROAS, per-product profit detail, and admin user access control. None of
+that is held back from this repo; Pro is additive, not a locked version of
+Free (see Guideline 5, WordPress.org's plugin directory requirements).
 
 ## Contributing
 
