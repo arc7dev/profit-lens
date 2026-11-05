@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 10.3
 WC tested up to: 10.3
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -95,9 +95,10 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 
 == Changelog ==
 
-= Unreleased =
+= 1.2.0 =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.
 * Fixed: orders in a currency other than your store's base currency are now excluded from profit totals instead of being mixed in — the dashboard shows how many were excluded and their amount.
+* Changed: WordPress now prevents activating Profit Lens without WooCommerce active, instead of activating it dormant with an admin notice. Also corrected the plugin's documented minimum WooCommerce version to 10.3 (the version that added the Cost of Goods Sold field this plugin depends on).
 
 = 1.1.0 =
 * Added: Product rows in the profit table now open a detailed view when Profit Lens Pro is active.
