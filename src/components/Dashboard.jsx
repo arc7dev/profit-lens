@@ -9,6 +9,7 @@ import { useSummary } from '../hooks/useSummary';
 import { formatCurrency } from '../utils/currency';
 import CostBreakdown from './CostBreakdown';
 import CostCoverageNotice from './CostCoverageNotice';
+import CurrencyExclusionNotice from './CurrencyExclusionNotice';
 import CustomRangePicker from './CustomRangePicker';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
@@ -166,6 +167,7 @@ export default function Dashboard() {
 		cost_breakdown: costBreakdown,
 		products,
 		products_meta: productsMeta,
+		currency_exclusions: currencyExclusions,
 		range,
 	} = data;
 	const isNetLoss = kpis.net_profit.amount < 0;
@@ -233,6 +235,7 @@ export default function Dashboard() {
 				<NoOrdersState
 					rangeLabel={ range.label }
 					onExpandRange={ () => selectRange( '30d' ) }
+					currencyExclusions={ currencyExclusions }
 				/>
 			) : (
 				<>
@@ -269,6 +272,9 @@ export default function Dashboard() {
 					</div>
 
 					<CostCoverageNotice coverage={ coverage } />
+					<CurrencyExclusionNotice
+						currencyExclusions={ currencyExclusions }
+					/>
 					<InsightBar insight={ insight } />
 
 					<div className="pl-row">

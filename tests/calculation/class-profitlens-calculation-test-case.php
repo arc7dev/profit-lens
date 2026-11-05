@@ -75,13 +75,16 @@ abstract class ProfitLens_Calculation_Test_Case extends WP_UnitTestCase {
 	 * @param array  $items  List of ['product' => WC_Product, 'qty' => int, 'total' => float|null].
 	 *                       'total' defaults to product price * qty.
 	 * @param string $status Order status without the 'wc-' prefix.
-	 * @param array  $props  Extra order props: shipping_total, payment_method, etc.
+	 * @param array  $props  Extra order props: shipping_total, payment_method,
+	 *                       currency (default 'USD' — issue #42's tests are
+	 *                       the only ones that ever pass a different value),
+	 *                       etc.
 	 * @return WC_Order
 	 */
 	protected function create_order( array $items, $status = 'completed', array $props = array() ) {
 		$order = new WC_Order();
 		$order->set_status( $status );
-		$order->set_currency( 'USD' );
+		$order->set_currency( $props['currency'] ?? 'USD' );
 		$order->set_payment_method( $props['payment_method'] ?? 'bacs' );
 		$order->set_shipping_total( $props['shipping_total'] ?? 0.0 );
 		$order->set_shipping_tax( 0 );

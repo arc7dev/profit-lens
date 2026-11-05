@@ -114,6 +114,18 @@ class ProfitLens_Assets {
 				// trigger button, and which day the calendar week starts on.
 				'dateFormat'        => get_option( 'date_format' ),
 				'startOfWeek'       => (int) get_option( 'start_of_week', 0 ),
+				// Issue #42: formatting an excluded order's amount in ITS
+				// OWN currency (not the store's) goes through
+				// Intl.NumberFormat, which needs a real BCP 47 locale
+				// tag, not WordPress's underscore-separated one
+				// (get_user_locale() returns e.g. 'es_ES', Intl wants
+				// 'es-ES'). get_user_locale() over get_locale(): this is
+				// about how a number should look to the person viewing
+				// the admin screen right now, not the site's own
+				// front-end locale, which can legitimately differ (e.g.
+				// a US-based admin running a site whose front end is in
+				// Spanish for customers).
+				'locale'            => str_replace( '_', '-', get_user_locale() ),
 				// Empty by default — no external code registered. Pro (if
 				// active) hooks this to provide a real URL, gated on its own
 				// license validity; ProSection.jsx renders a real "Upload
