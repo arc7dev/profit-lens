@@ -17,3 +17,4 @@ vendor/
 phpcs.xml
 .git/
 .phpunit.result.cache
+.wordpress-org/
