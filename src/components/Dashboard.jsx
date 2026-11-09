@@ -232,6 +232,15 @@ export default function Dashboard() {
 				</div>
 			</div>
 
+			{ /* Right under the page header on purpose — eligibility
+			 * (ProfitLens_Review_Notice::should_show()) is about the
+			 * store's all-time usage, not the currently selected range, so
+			 * it renders here regardless of whether that range has orders
+			 * (NoOrdersState below) or not. Also near the top because a
+			 * notice nobody scrolls far enough to see never gets clicked —
+			 * see ReviewNotice.jsx's own docblock. */ }
+			<ReviewNotice />
+
 			{ kpis.revenue.orders_count === 0 ? (
 				<NoOrdersState
 					rangeLabel={ range.label }
@@ -298,10 +307,6 @@ export default function Dashboard() {
 						range={ range }
 					/>
 
-					{ /* Deliberately last on the page, well away from the
-					 * cost-coverage/currency notices near the top — see
-					 * ReviewNotice.jsx's own docblock. */ }
-					<ReviewNotice />
 				</>
 			) }
 		</div>

@@ -282,11 +282,12 @@
 }
 
 /* ── Review notice ─────────────────────────────────────────────────────── */
-/* Same neutral card language as .pl-coverage's base (unmodified) state —
-   deliberately never the --low/--critical loss-colored variants, and
-   placed at the very bottom of the dashboard (see Dashboard.jsx), so it
-   never visually competes with the cost-coverage/currency-exclusion
-   notices near the top. */
+/* Mint accent wash, not the gray .pl-coverage-style left-border treatment
+   (tried first, found too easy to miss against the rest of the page) —
+   never the --low/--critical loss-colored styling either, since this
+   isn't a warning. Placed right under the page header (see Dashboard.jsx)
+   specifically so it's visible without scrolling, regardless of which
+   range is selected or whether it has orders. */
 
 .pl-review-notice {
 	display: flex;
@@ -294,11 +295,11 @@
 	justify-content: space-between;
 	flex-wrap: wrap;
 	gap: 12px;
-	padding: 12px 16px;
-	margin-top: 20px;
-	background: var(--pl-color-border-soft);
-	border-left: 3px solid var(--pl-color-muted);
-	border-radius: 0 var(--pl-radius) var(--pl-radius) 0;
+	padding: 13px 16px;
+	margin-bottom: 20px;
+	background: var(--pl-color-accent-wash);
+	border: 1px solid var(--pl-color-accent);
+	border-radius: var(--pl-radius);
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
 	color: var(--pl-color-text);
@@ -307,6 +308,7 @@
 .pl-review-notice__text {
 	flex: 1;
 	min-width: 220px;
+	font-weight: 500;
 }
 
 .pl-review-notice__actions {
