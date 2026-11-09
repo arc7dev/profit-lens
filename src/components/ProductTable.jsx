@@ -25,7 +25,7 @@ import ProUpgradeModal from './ProUpgradeModal';
 // -$6.9K, but an ALL-TIME totals row (a real, reachable custom range,
 // not a hypothetical) reaches $545,522.12 revenue / −$257,716.71 profit
 // — the totals row has to fit too, not just individual product rows.
-// Net Profit also has to fit the "No cost set" chip (measured ~116px
+// Product profit also has to fit the "No cost set" chip (measured ~116px
 // with padding), which turned out wider than any currency figure a
 // single product row will ever show in that column.
 const COLUMNS = [
@@ -35,12 +35,13 @@ const COLUMNS = [
 	{ key: 'cost', label: 'Cost', align: 'right', width: 118 },
 	{
 		key: 'profit',
-		label: 'Net Profit',
+		label: 'Product profit',
+		help: 'Revenue minus product cost. Payment fees and other order-level amounts aren\u2019t split across products.',
 		align: 'right',
-		width: 130,
+		width: 150,
 		sticky: 'right',
 	},
-	{ key: 'margin_pct', label: 'Margin %', align: 'right', width: 96 },
+	{ key: 'margin_pct', label: 'Product margin', align: 'right', width: 120 },
 ];
 
 /**
@@ -113,6 +114,58 @@ function SortIcon( { active, dir } ) {
 }
 
 /**
+ * One line under the TOTAL row explaining why "Product profit" doesn't
+ * match the Net profit KPI: order-level amounts that can't be attributed
+ * to a single product. Every figure comes straight from
+ * products_meta.reconciliation (ProfitLens_Profit_Engine::
+ * format_reconciliation()); nothing is derived here. Shipping is never
+ * listed: the shipping charged and the shipping cost always cancel out
+ * in Free, and naming it only raises questions.
+ *
+ * @param {Object}  props
+ * @param {?Object} props.reconciliation
+ */
+function ReconciliationNote( { reconciliation } ) {
+	if ( ! reconciliation ) {
+		return null;
+	}
+
+	// effect: how the term moves product profit toward net profit.
+	const signed = ( effect ) =>
+		`${ effect < 0 ? '\u2212' : '+' }${ formatCurrency(
+			Math.abs( effect ),
+			2
+		) }`;
+
+	const terms = [
+		`payment fees ${ signed( -reconciliation.gateway_fees ) }`,
+	];
+
+	if ( reconciliation.refunds_unattributed !== 0 ) {
+		terms.push(
+			`refunds not tied to a product ${ signed(
+				-reconciliation.refunds_unattributed
+			) }`
+		);
+	}
+
+	if ( reconciliation.deleted_products_profit !== 0 ) {
+		terms.push(
+			`sales of deleted products ${ signed(
+				reconciliation.deleted_products_profit
+			) }`
+		);
+	}
+
+	return (
+		<p className="pl-table-card__reconciliation">
+			Not split across products: { terms.join( ' \u00b7 ' ) }. Net profit
+			for the period: { formatCurrency( reconciliation.net_profit, 2 ) }.
+		</p>
+	);
+}
+
+/**
  * "Profit by Product" table: search + sortable by column (over the full
  * result set, not just the visible page) + client-side pagination.
  *
@@ -156,15 +209,17 @@ function SortIcon( { active, dir } ) {
  * materially past what's documented here — this is a threshold to watch,
  * not a hard number to hit before acting.
  *
- * @param {Object}                                                                    props
- * @param {Array}                                                                     props.products
- * @param {{units:number,revenue:number,cost:number,profit:number,margin_pct:number}} props.totals
- * @param {string}                                                                    props.rangeLabel
- * @param {{key:string,label:string,after:string,before:string}}                      props.range      Dashboard.jsx's currently selected period — after/before (not just the label) are needed here to open Pro's product detail modal for the exact period this table is already showing.
+ * @param {Object}                                                                                                                          props
+ * @param {Array}                                                                                                                           props.products
+ * @param {{units:number,revenue:number,cost:number,profit:number,margin_pct:number}}                                                       props.totals
+ * @param {?{gateway_fees:number,refunds_unattributed:number,deleted_products_profit:number,product_profit_total:number,net_profit:number}} props.reconciliation products_meta.reconciliation — rendered as-is, never recomputed here.
+ * @param {string}                                                                                                                          props.rangeLabel
+ * @param {{key:string,label:string,after:string,before:string}}                                                                            props.range          Dashboard.jsx's currently selected period — after/before (not just the label) are needed here to open Pro's product detail modal for the exact period this table is already showing.
  */
 export default function ProductTable( {
 	products,
 	totals,
+	reconciliation,
 	rangeLabel,
 	range,
 } ) {
@@ -395,6 +450,16 @@ export default function ProductTable( {
 									onClick={ () => handleSort( col.key ) }
 								>
 									{ col.label }
+									{ col.help && (
+										<span
+											className="pl-table__help"
+											title={ col.help }
+											aria-label={ col.help }
+											role="img"
+										>
+											?
+										</span>
+									) }
 									<SortIcon
 										active={ sortKey === col.key }
 										dir={ sortDir }
@@ -513,6 +578,8 @@ export default function ProductTable( {
 					</tbody>
 				</table>
 			</div>
+
+			<ReconciliationNote reconciliation={ reconciliation } />
 
 			{ pageCount > 1 && (
 				<div className="pl-table-card__pagination">

@@ -101,6 +101,8 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 * Fixed: the per-order cost tracking note showed the wrong percentage (the protected share instead of the unprotected one) — a period with no tracked orders said 0% instead of 100%.
 * Changed: the loss-making product insight no longer uses the green accent; it now uses the loss color.
 * Changed: the review notice is now a neutral card with a primary "Leave a review" button, so it no longer looks like a data insight.
+* Changed: the "Profit by product" table now says "Product profit" and "Product margin", and a line under the total explains the gap to the Net profit KPI (payment fees, refunds not tied to a product, sales of deleted products).
+* Fixed: line amounts stored with more than two decimals (e.g. after a percentage coupon) are now rounded to the cent once per line, so the product table and the KPIs agree to the cent.
 
 = 1.2.0 =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.

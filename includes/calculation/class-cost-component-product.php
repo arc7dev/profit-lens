@@ -94,17 +94,26 @@ class ProfitLens_Cost_Component_Product implements ProfitLens_Cost_Component {
 			/** @var WC_Order_Item_Product $item */
 			$product = $item->get_product();
 
+			// Money is resolved to cents here, once per line, and every
+			// consumer (KPIs via get_order_revenue() and the product cost
+			// component, the per-product rows, products_meta.reconciliation)
+			// works from these same cent values. WooCommerce stores line
+			// totals with up to 4+ decimals (e.g. 7.5342 after a percentage
+			// coupon); rounding per ORDER in one place and not at all in
+			// another made the "Profit by product" total and net_profit
+			// disagree by a cent or two on the real dataset.
+			//
 			// Refund line items store negative quantities/totals by
 			// WooCommerce convention (see wc_create_refund()) — abs() to
 			// get how many units/dollars actually came back.
 			$refunded_qty    = abs( (float) $order->get_qty_refunded_for_item( $item_id ) );
-			$refunded_amount = abs( (float) $order->get_total_refunded_for_item( $item_id ) );
+			$refunded_amount = round( abs( (float) $order->get_total_refunded_for_item( $item_id ) ), 2 );
 			$net_qty         = max( 0.0, (float) $item->get_quantity() - $refunded_qty );
-			$line_revenue    = (float) $item->get_total();
+			$line_revenue    = round( (float) $item->get_total(), 2 );
 
 			list( $unit_cost, $from_snapshot ) = $this->resolve_unit_cost( $item, $product );
 
-			$line_cost = null !== $unit_cost ? $unit_cost * $net_qty : 0.0;
+			$line_cost = null !== $unit_cost ? round( $unit_cost * $net_qty, 2 ) : 0.0;
 
 			$lines[ $item_id ] = array(
 				'item_id'         => $item_id,
