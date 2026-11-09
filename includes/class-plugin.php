@@ -30,6 +30,8 @@ class ProfitLens_Plugin {
 		'ProfitLens_REST_Controller'             => 'class-rest-controller.php',
 		'ProfitLens_CLI_Verify'                  => 'class-cli-verify.php',
 		'ProfitLens_Cost_Snapshotter'            => 'class-cost-snapshotter.php',
+		'ProfitLens_Pro_Links'                   => 'class-pro-links.php',
+		'ProfitLens_Review_Notice'               => 'class-review-notice.php',
 		'ProfitLens_Profit_Engine'               => 'calculation/class-profit-engine.php',
 		'ProfitLens_Cost_Source'                 => 'calculation/interface-cost-source.php',
 		'ProfitLens_Cost_Source_Cogs'            => 'calculation/class-cost-source-cogs.php',
@@ -59,6 +61,11 @@ class ProfitLens_Plugin {
 	 * @var ProfitLens_Cost_Snapshotter
 	 */
 	public $cost_snapshotter;
+
+	/**
+	 * @var ProfitLens_Review_Notice
+	 */
+	public $review_notice;
 
 	/**
 	 * Returns (and creates, if needed) the plugin's single instance.
@@ -106,6 +113,7 @@ class ProfitLens_Plugin {
 		$this->assets           = new ProfitLens_Assets();
 		$this->rest_controller  = new ProfitLens_REST_Controller();
 		$this->cost_snapshotter = new ProfitLens_Cost_Snapshotter();
+		$this->review_notice    = new ProfitLens_Review_Notice();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			ProfitLens_CLI_Verify::register();
@@ -136,10 +144,16 @@ class ProfitLens_Plugin {
 
 	/**
 	 * Activation callback. Doesn't run the calculation engine: it only
-	 * prepares the ground (flushing rewrite rules for the REST endpoints).
+	 * prepares the ground (flushing rewrite rules for the REST endpoints,
+	 * and starting the review notice's 14-day clock — see
+	 * ProfitLens_Review_Notice::record_first_activation()'s own docblock
+	 * for why an existing install that updates without a fresh
+	 * activation also needs its own fallback, handled separately by that
+	 * same class).
 	 */
 	public static function activate() {
 		flush_rewrite_rules();
+		ProfitLens_Review_Notice::record_first_activation();
 	}
 
 	public static function deactivate() {

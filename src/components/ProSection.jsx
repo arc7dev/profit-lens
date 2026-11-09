@@ -142,18 +142,25 @@ export default function ProSection( { range, netProfit } ) {
 					<button
 						type="button"
 						className="pl-pro__cta pl-mono"
-						data-pro-href="https://arc7.dev/profit-lens/pro"
 						onClick={ () => setShowProModal( true ) }
 					>
-						Connect Meta &amp; Google Ads
+						Connect Google Ads
 					</button>
 				) }
+				{ /* Meta Ads is a structural stub in profit-lens-pro (not
+				 * implemented — see class-ad-source-meta.php), same "not
+				 * bundled with Google as if both were live" fix already
+				 * applied on arc7.dev's /profit-lens page. */ }
+				<p className="pl-pro__meta-note pl-mono">
+					Meta Ads — coming soon
+				</p>
 			</div>
 
 			<ProUpgradeModal
 				isOpen={ showProModal }
 				onClose={ () => setShowProModal( false ) }
 				feature="Ads Integration"
+				source="ad-spend"
 			/>
 		</div>
 	);

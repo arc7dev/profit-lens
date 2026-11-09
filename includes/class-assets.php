@@ -169,6 +169,13 @@ class ProfitLens_Assets {
 				// re-derive in the browser.
 				'cogsSettingsUrl'   => admin_url( 'admin.php?page=wc-settings&tab=advanced&section=features' ),
 				'productsUrl'       => admin_url( 'edit.php?post_type=product' ),
+				// One arc7.dev/profit-lens/pro/from/{source} URL per
+				// whitelisted source (ProfitLens_Pro_Links::SOURCES) —
+				// every component that links toward Pro reads its own
+				// entry here instead of hardcoding arc7.dev, so the URL
+				// shape/UTM params live in exactly one PHP class.
+				'proLinks'          => ProfitLens_Pro_Links::build_all(),
+				'reviewNotice'      => ProfitLens_Review_Notice::get_state_for_current_user(),
 			)
 		);
 
