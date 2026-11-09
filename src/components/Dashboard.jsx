@@ -20,6 +20,7 @@ import NoOrdersState from './NoOrdersState';
 import ProfitChart from './ProfitChart';
 import ProSection from './ProSection';
 import ProductTable from './ProductTable';
+import ReviewNotice from './ReviewNotice';
 
 const RANGES = [
 	{ key: '7d', label: 'Last 7 days' },
@@ -296,6 +297,11 @@ export default function Dashboard() {
 						rangeLabel={ range.label }
 						range={ range }
 					/>
+
+					{ /* Deliberately last on the page, well away from the
+					 * cost-coverage/currency notices near the top — see
+					 * ReviewNotice.jsx's own docblock. */ }
+					<ReviewNotice />
 				</>
 			) }
 		</div>

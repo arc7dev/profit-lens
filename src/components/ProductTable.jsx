@@ -173,6 +173,13 @@ export default function ProductTable( {
 	const [ search, setSearch ] = useState( '' );
 	const [ page, setPage ] = useState( 0 );
 	const [ showProModal, setShowProModal ] = useState( false );
+	// Separate from showProModal (Export CSV's own upsell) — each row's
+	// click/keypress and the Export CSV button are independent entry
+	// points with their own source attribution (product-modal vs
+	// export-csv), so they get their own ProUpgradeModal instance rather
+	// than sharing state and racing on which `feature`/`source` the
+	// shared modal should show.
+	const [ showProductModal, setShowProductModal ] = useState( false );
 	const searchInputRef = useRef( null );
 
 	function handleSort( key ) {
@@ -221,6 +228,31 @@ export default function ProductTable( {
 
 		// Pro isn't installed at all — existing upsell modal, unchanged.
 		setShowProModal( true );
+	}
+
+	/**
+	 * Row activation (click or Enter/Space — see the <tr>'s own
+	 * tabIndex/role/onKeyDown below) for both Pro and non-Pro merchants:
+	 * window.profitLensPro.openProductModal exists only once Pro's
+	 * bundle actually loaded on this screen and is licensed
+	 * (class-assets-pro.php's enqueue_profit_after_ad_spend_bridge()) —
+	 * when it doesn't, every row still does something instead of
+	 * silently no-op'ing, the same upsell modal Export CSV already uses,
+	 * attributed to its own 'product-modal' source.
+	 *
+	 * @param {Object} row
+	 */
+	function handleRowActivate( row ) {
+		if ( window.profitLensPro?.openProductModal ) {
+			window.profitLensPro.openProductModal(
+				row.id,
+				range.after,
+				range.before
+			);
+			return;
+		}
+
+		setShowProductModal( true );
 	}
 
 	function handleClearSearch() {
@@ -386,14 +418,11 @@ export default function ProductTable( {
 
 						{ paged.map( ( row ) => {
 							const isLoss = row.has_cost && row.profit < 0;
-							// window.profitLensPro.openProductModal only
-							// exists once Pro's bundle actually loaded on
-							// this screen (class-assets-pro.php's
-							// enqueue_profit_after_ad_spend_bridge(), gated
-							// on license validity) — same optional-chaining
-							// pattern ProSection.jsx already uses, so a row
-							// is inert with a plain cursor when Pro isn't
-							// active/licensed, no separate flag to check.
+							// Whether this click/keypress opens Pro's real
+							// product detail view or the upgrade upsell —
+							// see handleRowActivate(). Only used here for
+							// the aria-label; the actual branching lives in
+							// that one function so the two can't drift.
 							const canOpenModal = Boolean(
 								window.profitLensPro?.openProductModal
 							);
@@ -401,20 +430,24 @@ export default function ProductTable( {
 							return (
 								<tr
 									key={ row.id }
-									onClick={ () => {
-										if ( canOpenModal ) {
-											window.profitLensPro.openProductModal(
-												row.id,
-												range.after,
-												range.before
-											);
+									tabIndex={ 0 }
+									role="button"
+									aria-label={
+										canOpenModal
+											? `View details for ${ row.name }`
+											: `Unlock product details for ${ row.name } with Profit Lens Pro`
+									}
+									onClick={ () => handleRowActivate( row ) }
+									onKeyDown={ ( e ) => {
+										if (
+											'Enter' === e.key ||
+											' ' === e.key
+										) {
+											e.preventDefault();
+											handleRowActivate( row );
 										}
 									} }
-									style={ {
-										cursor: canOpenModal
-											? 'pointer'
-											: 'default',
-									} }
+									style={ { cursor: 'pointer' } }
 								>
 									<td className={ NAME_CELL_CLASS }>
 										<div
@@ -509,6 +542,13 @@ export default function ProductTable( {
 				isOpen={ showProModal }
 				onClose={ () => setShowProModal( false ) }
 				feature="Export CSV"
+				source="export-csv"
+			/>
+			<ProUpgradeModal
+				isOpen={ showProductModal }
+				onClose={ () => setShowProductModal( false ) }
+				feature="Product details"
+				source="product-modal"
 			/>
 		</div>
 	);
