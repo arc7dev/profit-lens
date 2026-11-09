@@ -14,9 +14,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract plugin version
+        id: plugin_version
+        run: |
+          VERSION=$(grep "^ \* Version:" profit-lens.php | awk '{print $NF}')
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: profit-lens
+          VERSION: ${{ steps.plugin_version.outputs.version }}
