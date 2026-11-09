@@ -76,6 +76,16 @@ export default function CostCoverageNotice( { coverage } ) {
 	const uncoveredCount =
 		coverage.products_total - coverage.products_with_cost;
 
+	// snapshot_covered_pct is the PROTECTED share (revenue whose cost was
+	// frozen at order time); the sentence below describes the remaining,
+	// UNPROTECTED share, so it has to show the complement. Showing the raw
+	// figure read backwards: a period with no snapshots at all (0%)
+	// rendered as "0.0% of this period's revenue is from orders placed
+	// before per-order cost tracking" when the true figure is 100%.
+	const snapshotUncoveredPct = showSnapshotNote
+		? 100 - coverage.snapshot_covered_pct
+		: 0;
+
 	return (
 		<>
 			{ 'full' !== tier && (
@@ -116,7 +126,7 @@ export default function CostCoverageNotice( { coverage } ) {
 				<div className="pl-coverage">
 					<span className="pl-coverage__text">
 						<span className="pl-coverage__figure pl-mono">
-							{ coverage.snapshot_covered_pct.toFixed( 1 ) }%
+							{ snapshotUncoveredPct.toFixed( 1 ) }%
 						</span>{ ' ' }
 						of this period&rsquo;s revenue is from orders placed
 						before per-order cost tracking — their profit uses

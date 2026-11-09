@@ -98,6 +98,9 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 = Unreleased =
 * Added: links to Profit Lens Pro throughout the dashboard (Export CSV, product detail, ad spend, and product rows) now carry a source tag, so arc7.dev can tell which feature a visit came from. No data about your store is sent — only the click itself, after you choose to follow the link.
 * Added: an optional, dismissible notice on the Profit Lens screen asks happy users for a WordPress.org review after 2 weeks of real use. Never appears elsewhere in wp-admin, never shows an incentive, and "Don't ask again" or "Maybe later" are both one click.
+* Fixed: the per-order cost tracking note showed the wrong percentage (the protected share instead of the unprotected one) — a period with no tracked orders said 0% instead of 100%.
+* Changed: the loss-making product insight no longer uses the green accent; it now uses the loss color.
+* Changed: the review notice is now a neutral card with a primary "Leave a review" button, so it no longer looks like a data insight.
 
 = 1.2.0 =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.

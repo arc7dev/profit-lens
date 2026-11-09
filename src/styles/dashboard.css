@@ -282,12 +282,16 @@
 }
 
 /* ── Review notice ─────────────────────────────────────────────────────── */
-/* Mint accent wash, not the gray .pl-coverage-style left-border treatment
-   (tried first, found too easy to miss against the rest of the page) —
-   never the --low/--critical loss-colored styling either, since this
-   isn't a warning. Placed right under the page header (see Dashboard.jsx)
-   specifically so it's visible without scrolling, regardless of which
-   range is selected or whether it has orders. */
+
+/* Neutral card (surface + border), deliberately NOT the mint accent wash:
+   the InsightBar right below it is the dashboard's data-finding callout,
+   and two stacked tinted bands read as two findings. This one is a
+   request from the plugin, not something the data says — never the
+   --low/--critical loss styling either, since it isn't a warning.
+   Visibility comes from position (right under the page header, see
+   Dashboard.jsx, rendered regardless of the selected range), the star
+   icon and the primary CTA, not from a tinted background. Sans font
+   throughout: mono is reserved for figures and labels. */
 
 .pl-review-notice {
 	display: flex;
@@ -297,12 +301,17 @@
 	gap: 12px;
 	padding: 13px 16px;
 	margin-bottom: 20px;
-	background: var(--pl-color-accent-wash);
-	border: 1px solid var(--pl-color-accent);
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
 	border-radius: var(--pl-radius);
 	font-family: var(--pl-font-sans);
 	font-size: 13px;
 	color: var(--pl-color-text);
+}
+
+.pl-review-notice__icon {
+	flex-shrink: 0;
+	color: var(--pl-color-accent-strong);
 }
 
 .pl-review-notice__text {
@@ -318,22 +327,19 @@
 	flex-shrink: 0;
 }
 
-.pl-review-notice__link {
-	font-family: var(--pl-font-mono);
+/* Compact variant of .pl-btn-primary. Two classes (0,0,2,0) so it beats
+   the base rule's width:100%/padding (0,0,1,0) regardless of where each
+   rule sits in this file. Hover/focus come from .pl-btn-primary as-is. */
+.pl-review-notice .pl-review-notice__cta {
+	width: auto;
+	padding: 6px 12px;
 	font-size: 12px;
-	font-weight: 600;
-	color: var(--pl-color-profit);
-	text-decoration: none;
 	white-space: nowrap;
 }
 
-.pl-review-notice__link:hover {
-	text-decoration: underline;
-}
-
 .pl-review-notice__btn {
-	font-family: var(--pl-font-mono);
-	font-size: 11px;
+	font-family: var(--pl-font-sans);
+	font-size: 12px;
 	color: var(--pl-color-muted);
 	background: none;
 	border: none;
@@ -347,14 +353,19 @@
 	text-decoration: underline;
 }
 
-.pl-review-notice__link:focus-visible,
 .pl-review-notice__btn:focus-visible {
-	outline: 2px solid var(--pl-color-accent);
+	outline: 2px solid var(--pl-color-text);
 	outline-offset: 2px;
 }
 
 /* ── Insight bar ───────────────────────────────────────────────────────── */
 
+/* The only insight type today is loss_making_product (format_insight()
+   in class-profit-engine.php), so the accent is the loss color, not mint:
+   a money-losing product painted green read as good news. Neutral
+   surface + a loss-colored left rule only — a finding, not a full-bleed
+   alarm. If a positive insight type is ever added, key this off
+   insight.type instead of hardcoding the loss color. */
 .pl-insight {
 	display: flex;
 	align-items: center;
@@ -362,8 +373,9 @@
 	gap: 16px;
 	padding: 9px 14px;
 	margin-bottom: 20px;
-	background: var(--pl-color-accent-wash);
-	border-left: 3px solid var(--pl-color-accent);
+	background: var(--pl-color-surface);
+	border: 1px solid var(--pl-color-border);
+	border-left: 3px solid var(--pl-color-loss);
 	border-radius: 0 var(--pl-radius) var(--pl-radius) 0;
 }
 

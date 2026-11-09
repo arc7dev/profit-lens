@@ -306,7 +306,6 @@ export default function Dashboard() {
 						rangeLabel={ range.label }
 						range={ range }
 					/>
-
 				</>
 			) }
 		</div>
