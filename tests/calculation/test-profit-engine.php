@@ -459,4 +459,104 @@ class Test_ProfitLens_Profit_Engine extends ProfitLens_Calculation_Test_Case {
 
 		return null;
 	}
+
+	// -----------------------------------------------------------------
+	// products_meta.reconciliation: why the "Profit by product" total
+	// differs from net_profit.
+	// -----------------------------------------------------------------
+
+	/**
+	 * product_profit_total − gateway_fees − refunds_unattributed
+	 * + deleted_products_profit must equal net_profit EXACTLY (to the
+	 * cent, no tolerance), with every term non-zero at once: a gateway
+	 * fee, an amount-only refund on a completed order (not tied to any
+	 * line, so no product row absorbs it), a sale of a product that has
+	 * since been deleted, plus a line-level refund that IS absorbed by its
+	 * product row and must not be counted twice. Shipping is charged too,
+	 * to prove it cancels out without being a term.
+	 */
+	public function test_reconciliation_terms_explain_gap_to_net_profit_exactly() {
+		$kept    = $this->create_product( 5.0, 20.0 );
+		$deleted = $this->create_product( 4.0, 15.0 );
+
+		$order = $this->create_order(
+			array(
+				array( 'product' => $kept, 'qty' => 2, 'total' => 40.0 ),
+				array( 'product' => $deleted, 'qty' => 1, 'total' => 15.0 ),
+			),
+			'completed',
+			array(
+				'shipping_total' => 10.0,
+				'payment_method' => 'stripe',
+			)
+		);
+
+		$kept_item_id = null;
+		foreach ( $order->get_items() as $item_id => $item ) {
+			if ( $item->get_product_id() === $kept->get_id() ) {
+				$kept_item_id = $item_id;
+			}
+		}
+
+		// Line-level refund: absorbed by $kept's row (net_revenue 40 → 32).
+		$this->refund_item( $order, $kept_item_id, 8.0 );
+
+		// Amount-only refund on the still-completed order: no line_items,
+		// so no product row reflects it.
+		wc_create_refund(
+			array(
+				'order_id' => $order->get_id(),
+				'amount'   => 7.0,
+			)
+		);
+
+		// The snapshotter froze this line's cost ($4) when the order was
+		// created, so the deleted line still carries a known cost.
+		$deleted->delete( true );
+
+		list( $after, $before ) = $this->range();
+		$summary = $this->engine->get_summary( $after, $before );
+		$rec     = $summary['products_meta']['reconciliation'];
+
+		$fees = round( 65.0 * ProfitLens_Cost_Component_Gateway_Fees::DEFAULT_RATE + ProfitLens_Cost_Component_Gateway_Fees::DEFAULT_FIXED, 2 );
+
+		// Hand-computed, not read back from the engine.
+		$this->assertSame( 22.0, $rec['product_profit_total'] );   // (40 − 8) − 2 × 5.
+		$this->assertSame( $fees, $rec['gateway_fees'] );
+		$this->assertSame( 7.0, $rec['refunds_unattributed'] );    // 15 refunded − 8 absorbed by the row.
+		$this->assertSame( 11.0, $rec['deleted_products_profit'] ); // 15 − 4.
+		$this->assertSame( $summary['kpis']['net_profit']['amount'], $rec['net_profit'] );
+
+		$this->assertSame(
+			$summary['kpis']['net_profit']['amount'],
+			round( $rec['product_profit_total'] - $rec['gateway_fees'] - $rec['refunds_unattributed'] + $rec['deleted_products_profit'], 2 )
+		);
+	}
+
+	/**
+	 * The identity has to hold with sub-cent line totals too (WooCommerce
+	 * stores e.g. 7.5342 after a percentage coupon) — the real dataset
+	 * was off by $0.01–$0.02 until money was resolved to cents per line
+	 * in one place, for both the KPIs and the product rows.
+	 */
+	public function test_reconciliation_is_exact_with_sub_cent_line_totals() {
+		$product = $this->create_product( 1.0, 10.0 );
+
+		// Per-ORDER rounding (the old KPI path) gives 10.00 + 10.00, while
+		// summing the raw lines and rounding once (the old product-row
+		// path) gives round(20.008) = 20.01 — a one-cent gap per pair.
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 10.004 ) ) );
+		$this->create_order( array( array( 'product' => $product, 'qty' => 1, 'total' => 10.004 ) ) );
+
+		list( $after, $before ) = $this->range();
+		$summary = $this->engine->get_summary( $after, $before );
+		$rec     = $summary['products_meta']['reconciliation'];
+
+		$this->assertSame(
+			$summary['kpis']['net_profit']['amount'],
+			round( $rec['product_profit_total'] - $rec['gateway_fees'] - $rec['refunds_unattributed'] + $rec['deleted_products_profit'], 2 )
+		);
+		// (10.00 − 1) × 2: cents per line, the same for KPIs and rows.
+		$this->assertSame( 18.0, $rec['product_profit_total'] );
+	}
 }

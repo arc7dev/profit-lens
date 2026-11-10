@@ -303,10 +303,10 @@ export default function Dashboard() {
 					<ProductTable
 						products={ products }
 						totals={ productsMeta.totals }
+						reconciliation={ productsMeta.reconciliation }
 						rangeLabel={ range.label }
 						range={ range }
 					/>
-
 				</>
 			) }
 		</div>

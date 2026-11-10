@@ -1,6 +1,7 @@
 /**
- * Insight bar — the mint-colored callout with the most relevant finding
- * for the range (for now: the product that lost the most money).
+ * Insight bar — the callout with the most relevant finding for the range
+ * (for now: the product that lost the most money, so it uses the loss
+ * accent; see .pl-insight in dashboard.css).
  *
  * @param {Object}                                     props
  * @param {{message: string, product_id: number}|null} props.insight

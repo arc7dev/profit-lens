@@ -52,6 +52,19 @@ export default function ReviewNotice() {
 			role="region"
 			aria-label={ __( 'Review request', 'profit-lens' ) }
 		>
+			<svg
+				className="pl-review-notice__icon"
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				aria-hidden="true"
+				focusable="false"
+			>
+				<path
+					fill="currentColor"
+					d="M12 2.5l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.52l-5.88 3.09 1.12-6.55L2.48 9.42l6.58-.96L12 2.5z"
+				/>
+			</svg>
 			<span className="pl-review-notice__text">
 				{ __(
 					'Is Profit Lens useful for your store? A short review on WordPress.org helps other store owners find it.',
@@ -63,7 +76,7 @@ export default function ReviewNotice() {
 					href={ reviewNotice.reviewUrl }
 					target="_blank"
 					rel="noopener noreferrer"
-					className="pl-review-notice__link"
+					className="pl-btn-primary pl-review-notice__cta"
 					onClick={ () => sendAction( 'reviewed' ) }
 				>
 					{ __( 'Leave a review', 'profit-lens' ) }

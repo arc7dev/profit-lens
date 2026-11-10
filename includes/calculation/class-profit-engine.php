@@ -141,8 +141,9 @@ class ProfitLens_Profit_Engine {
 	public function get_order_revenue( WC_Order $order ) {
 		$revenue = 0.0;
 
+		// Per-line cents, same as resolve_line_items() — see the note there.
 		foreach ( $order->get_items( 'line_item' ) as $item ) {
-			$revenue += (float) $item->get_total();
+			$revenue += round( (float) $item->get_total(), 2 );
 		}
 
 		$revenue += (float) $order->get_shipping_total();
@@ -243,7 +244,7 @@ class ProfitLens_Profit_Engine {
 		$currency   = get_woocommerce_currency();
 
 		$products        = $this->format_products( $data );
-		$products_totals = $this->sum_products( $products );
+		$products_totals = $this->sum_products( $data['products'] );
 
 		return array(
 			'kpis'                => array(
@@ -269,8 +270,9 @@ class ProfitLens_Profit_Engine {
 			'cost_breakdown'      => $this->format_cost_breakdown( $data ),
 			'products'            => $products,
 			'products_meta'       => array(
-				'total'  => count( $products ),
-				'totals' => $products_totals,
+				'total'          => count( $products ),
+				'totals'         => $products_totals,
+				'reconciliation' => $this->format_reconciliation( $data, $products_totals['profit'], $profit ),
 			),
 			'currency_exclusions' => $this->format_currency_exclusions( $data ),
 		);
@@ -309,6 +311,13 @@ class ProfitLens_Profit_Engine {
 		$revenue_uncovered       = 0.0;
 		$revenue_snapshot_backed = 0.0;
 		$orders_count            = 0;
+
+		// Feed products_meta.reconciliation (see format_reconciliation()):
+		// the two order-level amounts, besides gateway fees, that the
+		// per-product rows can't show. Accumulated from the same
+		// already-resolved $product_lines below, no extra queries.
+		$refunds_attributed      = 0.0;
+		$deleted_products_profit = 0.0;
 
 		// Issue #42: product costs and KPI totals are all implicitly in the
 		// store's base currency — WooCommerce doesn't store an exchange
@@ -443,8 +452,26 @@ class ProfitLens_Profit_Engine {
 
 				foreach ( $product_lines as $line ) {
 					if ( ! $line['product'] ) {
+						// A line whose product no longer exists: its revenue
+						// and cost are in the KPIs (get_order_revenue() and
+						// the product cost component both iterate every
+						// line_item) but no table row can carry it. Gross
+						// line revenue, not net — any refund against it is
+						// left out of $refunds_attributed below, so it lands
+						// in refunds_unattributed instead of being counted
+						// twice.
+						$deleted_products_profit += $line['line_revenue'] - $line['line_cost'];
 						continue;
 					}
+
+					// The part of this line's refunds its product row
+					// actually absorbs: net_revenue is floored at 0, so a
+					// refund larger than the line itself only reduces the
+					// row by the line's own revenue. Whatever's left of
+					// get_total_refunded() after this (shipping/tax/
+					// amount-only refunds, over-refunds, refunds on deleted
+					// products' lines) is refunds_unattributed.
+					$refunds_attributed += min( $line['line_revenue'], $line['refunded_amount'] );
 
 					$product_id = $line['product']->get_id();
 
@@ -561,6 +588,8 @@ class ProfitLens_Profit_Engine {
 			'revenue_covered'         => $revenue_covered,
 			'revenue_uncovered'       => $revenue_uncovered,
 			'revenue_snapshot_backed' => $revenue_snapshot_backed,
+			'refunds_attributed'      => $refunds_attributed,
+			'deleted_products_profit' => $deleted_products_profit,
 			'base_currency'           => $base_currency,
 			'currency_exclusions'     => $currency_exclusions,
 		);
@@ -945,11 +974,52 @@ class ProfitLens_Profit_Engine {
 	}
 
 	/**
+	 * What separates the "Profit by product" total from kpis.net_profit,
+	 * as independent terms, so the UI can explain the gap without
+	 * recomputing anything:
+	 *
+	 *   product_profit_total − gateway_fees − refunds_unattributed
+	 *     + deleted_products_profit = net_profit
+	 *
+	 * Shipping isn't a term: get_order_revenue() adds the shipping charged
+	 * and ProfitLens_Cost_Component_Shipping subtracts the same amount, so
+	 * it always cancels out (see get_order_revenue()'s docblock).
+	 *
+	 * Each term is rounded once, from unrounded period sums. The identity
+	 * is asserted exactly in test-profit-engine.php and verified against
+	 * the real dataset, not given a tolerance.
+	 *
+	 * @param array $data                 aggregate() output (full mode).
+	 * @param float $product_profit_total sum_products()' rounded profit.
+	 * @param float $net_profit           kpis.net_profit.amount.
+	 * @return array{gateway_fees:float,refunds_unattributed:float,deleted_products_profit:float,product_profit_total:float,net_profit:float}
+	 */
+	private function format_reconciliation( array $data, $product_profit_total, $net_profit ) {
+		$refunds_total = isset( $data['cost_totals']['refunds'] ) ? $data['cost_totals']['refunds'] : 0.0;
+
+		return array(
+			'gateway_fees'            => round( isset( $data['cost_totals']['gateway_fees'] ) ? $data['cost_totals']['gateway_fees'] : 0.0, 2 ),
+			'refunds_unattributed'    => round( $refunds_total - $data['refunds_attributed'], 2 ),
+			'deleted_products_profit' => round( $data['deleted_products_profit'], 2 ),
+			'product_profit_total'    => $product_profit_total,
+			'net_profit'              => $net_profit,
+		);
+	}
+
+	/**
 	 * Sum of the "Profit by Product" rows — deliberately NOT the same as
 	 * kpis.total_costs (which also includes shipping/gateway fees/refunds,
 	 * none of which are attributable to a single product).
 	 *
-	 * @param array $products
+	 * Sums the UNROUNDED per-product figures from aggregate() and rounds
+	 * once at the end, rather than adding up format_products()' already-
+	 * rounded rows. Rounding each row first lets the error grow with the
+	 * number of products (up to half a cent per row), which broke
+	 * products_meta.reconciliation's identity against net_profit by a
+	 * cent on the real dataset. Trade-off, accepted on purpose: this total
+	 * can differ by a few cents from adding up the visible rows by hand.
+	 *
+	 * @param array $products aggregate()'s raw $data['products'].
 	 * @return array
 	 */
 	private function sum_products( array $products ) {
@@ -962,7 +1032,7 @@ class ProfitLens_Profit_Engine {
 		);
 
 		foreach ( $products as $product ) {
-			$totals['units']   += $product['units'];
+			$totals['units']   += (int) round( $product['units'] );
 			$totals['revenue'] += $product['revenue'];
 			$totals['cost']    += $product['cost'];
 			$totals['profit']  += $product['profit'];
