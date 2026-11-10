@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from '@wordpress/element';
 import ProUpgradeModal from './ProUpgradeModal';
 
 /**
- * Blurred preview of the Pro metrics (ROAS by campaign, ad spend vs.
+ * Blurred preview of the Pro metrics (ad spend by platform, ad spend vs.
  * profit) with an upsell overlay. This is NOT gated functionality in the
  * WordPress.org Guideline 5 sense — it's a visual preview of something
  * that requires connecting an external account (Meta/Google Ads), not a
@@ -37,11 +37,29 @@ import ProUpgradeModal from './ProUpgradeModal';
  * calculated figures.
  */
 const CAMPAIGNS = [
-	{ label: 'Meta — Retargeting', roas: 4.2, spend: 340 },
-	{ label: 'Google Shopping — All Products', roas: 2.1, spend: 580 },
-	{ label: 'Meta — Lookalike Audience', roas: 3.8, spend: 210 },
-	{ label: 'Google Search — Brand', roas: 6.7, spend: 95 },
+	{ label: 'Meta — Retargeting', platform: 'Meta Ads', spend: 340 },
+	{
+		label: 'Google Shopping — All Products',
+		platform: 'Google Ads',
+		spend: 580,
+	},
+	{ label: 'Meta — Lookalike Audience', platform: 'Meta Ads', spend: 210 },
+	{ label: 'Google Search — Brand', platform: 'Google Ads', spend: 95 },
 ];
+
+// Same fake campaigns, summed per platform — the shape Pro's real
+// "Ad spend by platform" breakdown has.
+const PLATFORMS = Object.values(
+	CAMPAIGNS.reduce( ( acc, c ) => {
+		acc[ c.platform ] = acc[ c.platform ] ?? {
+			label: c.platform,
+			spend: 0,
+		};
+		acc[ c.platform ].spend += c.spend;
+		return acc;
+	}, {} )
+);
+const MAX_PLATFORM_SPEND = Math.max( ...PLATFORMS.map( ( p ) => p.spend ) );
 
 /**
  * @param {Object}                                               props
@@ -85,22 +103,27 @@ export default function ProSection( { range, netProfit } ) {
 		<div className="pl-card pl-pro">
 			<div className="pl-pro__preview" aria-hidden="true">
 				<div className="pl-pro__col">
-					<div className="pl-pro__col-label">ROAS by Campaign</div>
-					{ CAMPAIGNS.map( ( c ) => (
-						<div className="pl-pro__campaign" key={ c.label }>
+					<div className="pl-pro__col-label">
+						Ad spend by platform
+					</div>
+					{ PLATFORMS.map( ( p ) => (
+						<div className="pl-pro__campaign" key={ p.label }>
 							<span className="pl-pro__campaign-name">
-								{ c.label }
+								{ p.label }
 							</span>
 							<div className="pl-pro__campaign-track">
 								<div
 									className="pl-pro__campaign-fill"
 									style={ {
-										width: `${ ( c.roas / 7 ) * 100 }%`,
+										width: `${
+											( p.spend / MAX_PLATFORM_SPEND ) *
+											100
+										}%`,
 									} }
 								/>
 							</div>
 							<span className="pl-pro__campaign-value pl-mono">
-								{ c.roas }× ROAS
+								${ p.spend }
 							</span>
 						</div>
 					) ) }
