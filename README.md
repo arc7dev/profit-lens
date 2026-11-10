@@ -124,9 +124,9 @@ All code in this repository is fully functional. Pro features live in a
 separate plugin, [profit-lens-pro](https://github.com/arc7dev/profit-lens-pro)
 (private, sold and served from [arc7.dev](https://arc7.dev)) — ad spend
 imported from a CSV or synced from Google Ads, profit after ad spend,
-ROAS, per-product profit detail, and admin user access control. None of
-that is held back from this repo; Pro is additive, not a locked version of
-Free (see Guideline 5, WordPress.org's plugin directory requirements).
+per-product profit detail, and admin user access control. None of that
+is held back from this repo; Pro is additive, not a locked version of Free
+(see Guideline 5, WordPress.org's plugin directory requirements).
 
 ## Contributing
 

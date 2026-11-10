@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 10.3
 WC tested up to: 10.3
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,7 +42,6 @@ Profit Lens works fully on its own. Profit Lens Pro is a separate add-on for sto
 
 * Import ad spend from a CSV file, or sync it directly from Google Ads.
 * Profit and margin after ad spend.
-* Total ROAS (revenue per dollar spent on ads).
 * Ad spend broken down by platform.
 * Meta Ads sync — coming soon.
 * Export the product table to CSV.
@@ -95,14 +94,15 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 
 == Changelog ==
 
-= Unreleased =
+= 1.3.0 =
 * Added: links to Profit Lens Pro throughout the dashboard (Export CSV, product detail, ad spend, and product rows) now carry a source tag, so arc7.dev can tell which feature a visit came from. No data about your store is sent — only the click itself, after you choose to follow the link.
-* Added: an optional, dismissible notice on the Profit Lens screen asks happy users for a WordPress.org review after 2 weeks of real use. Never appears elsewhere in wp-admin, never shows an incentive, and "Don't ask again" or "Maybe later" are both one click.
+* Added: an optional, dismissible notice on the Profit Lens screen invites you to leave a WordPress.org review after 2 weeks of real use. Never appears elsewhere in wp-admin, never shows an incentive, and "Don't ask again" or "Maybe later" are both one click.
 * Fixed: the per-order cost tracking note showed the wrong percentage (the protected share instead of the unprotected one) — a period with no tracked orders said 0% instead of 100%.
 * Changed: the loss-making product insight no longer uses the green accent; it now uses the loss color.
 * Changed: the review notice is now a neutral card with a primary "Leave a review" button, so it no longer looks like a data insight.
 * Changed: the "Profit by product" table now says "Product profit" and "Product margin", and a line under the total explains the gap to the Net profit KPI (payment fees, refunds not tied to a product, sales of deleted products).
 * Fixed: line amounts stored with more than two decimals (e.g. after a percentage coupon) are now rounded to the cent once per line, so the product table and the KPIs agree to the cent.
+* Changed: removed ROAS from the Profit Lens Pro feature list and from the dashboard's Pro preview (which now shows ad spend by platform) — Pro doesn't calculate it.
 
 = 1.2.0 =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.
