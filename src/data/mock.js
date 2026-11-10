@@ -259,6 +259,29 @@ export const CURRENCY_EXCLUSIONS_EXAMPLE = {
 	],
 };
 
+// products_meta.reconciliation for the "ready" mock. Every term non-zero,
+// so the dev switcher shows the longest form of the reconciliation line.
+// product_profit_total is derived so the identity holds, mirroring
+// ProfitLens_Profit_Engine::format_reconciliation().
+const MOCK_RECONCILIATION_TERMS = {
+	gateway_fees: 321.0,
+	refunds_unattributed: 42.5,
+	deleted_products_profit: 12.4,
+};
+
+function mockProductProfitTotal( netProfit ) {
+	const t = MOCK_RECONCILIATION_TERMS;
+	return (
+		Math.round(
+			( netProfit +
+				t.gateway_fees +
+				t.refunds_unattributed -
+				t.deleted_products_profit ) *
+				100
+		) / 100
+	);
+}
+
 /**
  * Builds a "ready" response with the same shape as the REST endpoint, for
  * a given range.
@@ -318,8 +341,15 @@ export function getMockSummary(
 				units: range.orders,
 				revenue: range.revenue,
 				cost: range.costs,
-				profit: range.net_profit,
+				profit: mockProductProfitTotal( range.net_profit ),
 				margin_pct: range.margin_pct,
+			},
+			reconciliation: {
+				...MOCK_RECONCILIATION_TERMS,
+				product_profit_total: mockProductProfitTotal(
+					range.net_profit
+				),
+				net_profit: range.net_profit,
 			},
 		},
 		currency_exclusions: currencyExclusions,
@@ -367,6 +397,7 @@ export function getMockEmptySummary(
 		products_meta: {
 			total: 0,
 			totals: { units: 0, revenue: 0, cost: 0, profit: 0, margin_pct: 0 },
+			reconciliation: null,
 		},
 		currency_exclusions: CURRENCY_EXCLUSIONS_NONE,
 	};
@@ -409,6 +440,7 @@ export function getMockAllOrdersExcludedSummary( rangeKey = '30d' ) {
 		products_meta: {
 			total: 0,
 			totals: { units: 0, revenue: 0, cost: 0, profit: 0, margin_pct: 0 },
+			reconciliation: null,
 		},
 		currency_exclusions: {
 			base_currency: 'USD',
