@@ -42,7 +42,6 @@ Profit Lens works fully on its own. Profit Lens Pro is a separate add-on for sto
 
 * Import ad spend from a CSV file, or sync it directly from Google Ads.
 * Profit and margin after ad spend.
-* Total ROAS (revenue per dollar spent on ads).
 * Ad spend broken down by platform.
 * Meta Ads sync — coming soon.
 * Export the product table to CSV.
@@ -103,6 +102,7 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 * Changed: the review notice is now a neutral card with a primary "Leave a review" button, so it no longer looks like a data insight.
 * Changed: the "Profit by product" table now says "Product profit" and "Product margin", and a line under the total explains the gap to the Net profit KPI (payment fees, refunds not tied to a product, sales of deleted products).
 * Fixed: line amounts stored with more than two decimals (e.g. after a percentage coupon) are now rounded to the cent once per line, so the product table and the KPIs agree to the cent.
+* Changed: removed "Total ROAS" from the Profit Lens Pro feature list — Pro doesn't calculate it.
 
 = 1.2.0 =
 * Fixed: setup screen now guides users through enabling Cost of Goods Sold and adding product costs.

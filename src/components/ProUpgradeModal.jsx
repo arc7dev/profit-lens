@@ -91,7 +91,6 @@ export default function ProUpgradeModal( {
 					Ads coming soon)
 				</li>
 				<li>Profit and margin after ad spend</li>
-				<li>Total ROAS</li>
 				<li>Ad spend broken down by platform</li>
 				<li>Export the profit-by-product table to CSV</li>
 				<li>Detailed cost and profit view for each product</li>
