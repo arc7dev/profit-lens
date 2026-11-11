@@ -1,0 +1,117 @@
+name: Activation smoke test
+
+# Installs the plugin the way WordPress.org ships it (the files that survive
+# .distignore, same rsync the deploy action uses) on a clean WordPress +
+# WooCommerce, then activates, deactivates and reactivates it with WP-CLI.
+#
+# Why this exists: 1.3.0 shipped with a fatal error on activation
+# (ProfitLens_Plugin::activate() needed a class before the autoloader was
+# registered). PHPUnit couldn't catch it, because the test bootstrap loads
+# the plugin on plugins_loaded and the autoloader is already in place before
+# any test calls activate(). Only a real activate_plugin() call, in a request
+# where plugins_loaded has already fired, reproduces what a store sees.
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+jobs:
+  activate:
+    name: Activate on clean WP (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 7.4 = "Requires PHP" in readme.txt; 8.3 = a current host default.
+        php: ['7.4', '8.3']
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wp
+          MYSQL_USER: wp
+          MYSQL_PASSWORD: wp
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3306:3306
+
+    env:
+      WP_DIR: /tmp/wp
+      PKG_DIR: /tmp/pkg/profit-lens
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+          tools: wp-cli
+          coverage: none
+
+      - name: Build the distributed plugin (rsync --exclude-from=.distignore)
+        run: |
+          mkdir -p "$PKG_DIR"
+          rsync -rc --exclude-from=.distignore ./ "$PKG_DIR/"
+          for f in profit-lens.php readme.txt build/index.js includes/class-plugin.php; do
+            test -f "$PKG_DIR/$f" || { echo "::error::missing $f in package"; exit 1; }
+          done
+          for d in src tests node_modules vendor .git .github .wordpress-org; do
+            test ! -e "$PKG_DIR/$d" || { echo "::error::$d leaked into package"; exit 1; }
+          done
+
+      - name: Install WordPress (latest) + WooCommerce (latest)
+        run: |
+          wp core download --path="$WP_DIR" --quiet
+          wp config create --path="$WP_DIR" --dbname=wp --dbuser=wp --dbpass=wp --dbhost=127.0.0.1 --skip-check \
+            --extra-php <<'PHP'
+          define( 'WP_DEBUG', true );
+          define( 'WP_DEBUG_LOG', true );
+          define( 'WP_DEBUG_DISPLAY', false );
+          PHP
+          wp core install --path="$WP_DIR" --url=http://localhost --title=CI --admin_user=admin \
+            --admin_password=admin --admin_email=ci@example.com --skip-email
+          wp plugin install woocommerce --activate --path="$WP_DIR"
+          wp core version --path="$WP_DIR"
+          wp plugin get woocommerce --field=version --path="$WP_DIR"
+
+      - name: Install the packaged plugin
+        run: cp -r "$PKG_DIR" "$WP_DIR/wp-content/plugins/profit-lens"
+
+      - name: Activate, deactivate, reactivate
+        run: |
+          wp plugin activate profit-lens --path="$WP_DIR"
+          wp plugin deactivate profit-lens --path="$WP_DIR"
+          wp plugin activate profit-lens --path="$WP_DIR"
+          test "$(wp plugin get profit-lens --field=status --path="$WP_DIR")" = "active"
+
+      - name: Plugin header is readable
+        run: |
+          wp eval --path="$WP_DIR" '
+            require_once ABSPATH . "wp-admin/includes/plugin.php";
+            $d = get_plugin_data( WP_PLUGIN_DIR . "/profit-lens/profit-lens.php", false, false );
+            echo $d["Version"], " | ", $d["Description"], "\n";
+            // The Plugins screen shows only the first line of a header field.
+            if ( substr( rtrim( $d["Description"] ), -1 ) !== "." ) {
+              fwrite( STDERR, "Description looks truncated (multi-line header?)\n" );
+              exit( 1 );
+            }'
+
+      - name: Fail on PHP fatals/warnings from the plugin
+        if: always()
+        run: |
+          LOG="$WP_DIR/wp-content/debug.log"
+          if [ -f "$LOG" ]; then cat "$LOG"; fi
+          if [ -f "$LOG" ] && grep -E "PHP (Fatal error|Parse error|Warning)" "$LOG" | grep -q "plugins/profit-lens/"; then
+            echo "::error::PHP errors from profit-lens in debug.log"
+            exit 1
+          fi
