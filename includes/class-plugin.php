@@ -81,8 +81,6 @@ class ProfitLens_Plugin {
 	}
 
 	private function __construct() {
-		spl_autoload_register( array( $this, 'autoload' ) );
-
 		if ( ! $this->woocommerce_is_active() ) {
 			add_action( 'admin_notices', array( $this, 'render_missing_woocommerce_notice' ) );
 			return;
@@ -92,11 +90,29 @@ class ProfitLens_Plugin {
 	}
 
 	/**
+	 * Registers the autoloader. Called from profit-lens.php as soon as this
+	 * file is loaded, NOT from the constructor: the constructor only runs on
+	 * 'plugins_loaded', and when WordPress activates a plugin it includes the
+	 * plugin file and fires the activation hook in the same request, after
+	 * 'plugins_loaded' has already fired. Registering here was the 1.3.0
+	 * activation fatal (activate() needs ProfitLens_Review_Notice, and no
+	 * autoloader existed yet). Idempotent.
+	 */
+	public static function register_autoloader() {
+		static $registered = false;
+		if ( $registered ) {
+			return;
+		}
+		spl_autoload_register( array( __CLASS__, 'autoload' ) );
+		$registered = true;
+	}
+
+	/**
 	 * Autoloader for the plugin's classes.
 	 *
 	 * @param string $class_name Requested class name.
 	 */
-	public function autoload( $class_name ) {
+	public static function autoload( $class_name ) {
 		if ( ! isset( self::$class_map[ $class_name ] ) ) {
 			return;
 		}
