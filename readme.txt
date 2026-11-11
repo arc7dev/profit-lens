@@ -6,7 +6,7 @@ Tested up to: 7.1
 Requires PHP: 7.4
 WC requires at least: 10.3
 WC tested up to: 10.3
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,10 @@ Profit Lens calculates profit in your store's base currency only, and doesn't co
 1. Dashboard — net profit, cost breakdown, and profit by product.
 
 == Changelog ==
+
+= 1.3.1 =
+* Fixed: fatal error when activating the plugin on a fresh install or after deactivating it.
+* Fixed: the plugin description in the Plugins screen was cut off after "not just".
 
 = 1.3.0 =
 * Added: links to Profit Lens Pro throughout the dashboard (Export CSV, product detail, ad spend, and product rows) now carry a source tag, so arc7.dev can tell which feature a visit came from. No data about your store is sent — only the click itself, after you choose to follow the link.

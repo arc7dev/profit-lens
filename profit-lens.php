@@ -2,11 +2,8 @@
 /**
  * Plugin Name:       Profit Lens — Profit Analytics for WooCommerce
  * Plugin URI:         https://arc7.dev/profit-lens
- * Description:        Shows the real profit of your WooCommerce store — not just
- *                      sales — by subtracting gateway fees, shipping, and refunds
- *                      from your product cost. 100% self-hosted, your data never
- *                      leaves your site.
- * Version:            1.3.0
+ * Description:        Shows the real profit of your WooCommerce store — not just sales — by subtracting gateway fees, shipping, and refunds from your product cost. 100% self-hosted, your data never leaves your site.
+ * Version:            1.3.1
  * Requires at least:  6.4
  * Requires PHP:       7.4
  * Requires Plugins:   woocommerce
@@ -56,7 +53,7 @@ add_action(
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-define( 'PROFITLENS_VERSION', '1.3.0' );
+define( 'PROFITLENS_VERSION', '1.3.1' );
 define( 'PROFITLENS_PLUGIN_FILE', __FILE__ );
 define( 'PROFITLENS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PROFITLENS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -69,6 +66,7 @@ define( 'PROFITLENS_TEXT_DOMAIN', 'profit-lens' );
 // only used for dev/PHPUnit (see composer.json).
 
 require_once PROFITLENS_PLUGIN_DIR . 'includes/class-plugin.php';
+ProfitLens_Plugin::register_autoloader();
 
 // ── Activation / deactivation ─────────────────────────────────────────────────
 
